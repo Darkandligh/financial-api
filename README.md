@@ -108,6 +108,7 @@ src/main/java/com/trinity/financial_api/
 |---|---|---|
 | `POST` | `/api/clientes` | Crear cliente |
 | `GET` | `/api/clientes/{id}` | Consultar cliente por ID |
+| `GET` | `/api/clientes/identificacion/{numero}` | Consultar cliente por número de identificación |
 | `PUT` | `/api/clientes/{id}` | Actualizar cliente |
 | `DELETE` | `/api/clientes/{id}` | Eliminar cliente |
 
@@ -363,20 +364,20 @@ El archivo `MiniBanco.postman_collection.json` en la raíz del proyecto contiene
 
 ## Frontend
 
-El proyecto incluye un dashboard web en `frontend/` que se conecta directamente a la API. No requiere Node.js, npm ni ningún build tool.
+El proyecto incluye un dashboard web servido directamente por Spring Boot. No requiere Node.js, npm ni ningún build tool.
 
 ### Archivos
 
 | Archivo | Descripción |
 |---|---|
-| `frontend/index.html` | Estructura HTML con sidebar y 5 secciones |
-| `frontend/styles.css` | Diseño dark fintech con glassmorphism y animaciones |
-| `frontend/app.js` | Lógica completa: fetch, toasts, estados de carga |
+| `src/main/resources/static/index.html` | Estructura HTML con sidebar y 5 secciones |
+| `src/main/resources/static/styles.css` | Diseño dark fintech con glassmorphism y animaciones |
+| `src/main/resources/static/app.js` | Lógica completa: fetch, toasts, estados de carga |
 
 ### Cómo usarlo
 
 1. Levanta el backend: `./mvnw spring-boot:run`
-2. Abre `frontend/index.html` directamente en el navegador
+2. Abre `http://localhost:8080` en el navegador
 3. El indicador de estado en el sidebar confirma la conexión con la API
 
 ### Secciones del dashboard

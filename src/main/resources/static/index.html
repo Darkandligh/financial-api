@@ -182,10 +182,10 @@
           <div class="card">
             <div class="card-header">
               <h3 class="card-title">Consultar Cliente</h3>
-              <p class="card-subtitle">Busca por ID para ver y gestionar</p>
+              <p class="card-subtitle">Busca por número de identificación (cédula, NIT, etc.)</p>
             </div>
             <div class="search-bar">
-              <input type="number" class="form-input" id="c-buscar-id" placeholder="ID del cliente (ej: 1)" />
+              <input type="text" class="form-input" id="c-buscar-id" placeholder="Ej: 1099887766" />
               <button class="btn btn-secondary" onclick="buscarCliente()">Buscar</button>
             </div>
             <div id="result-cliente" class="result-area"></div>
@@ -205,8 +205,12 @@
             </div>
             <form id="form-cuenta" autocomplete="off">
               <div class="form-group">
-                <label class="form-label">ID del Cliente</label>
-                <input type="number" class="form-input" id="cu-clienteId" placeholder="Ej: 1" required />
+                <label class="form-label">Cliente</label>
+                <div class="search-inline">
+                  <input type="text" class="form-input" id="cu-clienteNumId" placeholder="Número de identificación" />
+                  <button type="button" class="btn btn-secondary" onclick="buscarClienteParaCuenta()">Buscar</button>
+                </div>
+                <div id="cu-cliente-confirm" class="cu-cliente-confirm hidden"></div>
               </div>
               <div class="form-group">
                 <label class="form-label">Tipo de Cuenta</label>
@@ -245,7 +249,7 @@
               <p class="card-subtitle">Consulta, activa, inactiva o cancela</p>
             </div>
             <div class="search-bar">
-              <input type="number" class="form-input" id="cu-buscar-id" placeholder="ID del cliente" />
+              <input type="text" class="form-input" id="cu-buscar-id" placeholder="Número de identificación" />
               <button class="btn btn-secondary" onclick="listarCuentas()">Ver Cuentas</button>
             </div>
             <div id="result-cuentas" class="result-area"></div>
@@ -385,6 +389,19 @@
 
 <!-- ═══════════ TOASTS ═══════════ -->
 <div class="toast-container" id="toast-container"></div>
+
+<!-- ═══════════ MODAL ═══════════ -->
+<div class="modal-overlay hidden" id="modal-overlay">
+  <div class="modal-dialog">
+    <div class="modal-icon-wrap" id="modal-icon-wrap">⚠</div>
+    <h3 class="modal-title" id="modal-title"></h3>
+    <p class="modal-msg" id="modal-msg"></p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="modal-btn-cancel">Cancelar</button>
+      <button class="btn btn-danger" id="modal-btn-confirm">Confirmar</button>
+    </div>
+  </div>
+</div>
 
 <script src="app.js"></script>
 </body>

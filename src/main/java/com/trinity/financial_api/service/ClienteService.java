@@ -24,6 +24,11 @@ public class ClienteService {
             .orElseThrow(() -> new BusinessException("No existe un cliente con id: " + id));
     }
 
+    public Cliente buscarPorIdentificacion(String numeroIdentificacion) {
+        return clienteRepository.findByNumeroIdentificacion(numeroIdentificacion)
+            .orElseThrow(() -> new BusinessException("No existe un cliente con identificación: " + numeroIdentificacion));
+    }
+
     public Cliente crearCliente(Cliente cliente) {
         cliente.setId(null);
         validarMayoriaDeEdad(cliente.getFechaNacimiento());

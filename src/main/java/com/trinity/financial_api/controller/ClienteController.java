@@ -22,6 +22,11 @@ public class ClienteController {
         return ResponseEntity.ok(clienteService.buscarPorId(id));
     }
 
+    @GetMapping("/identificacion/{numero}")
+    public ResponseEntity<Cliente> buscarPorIdentificacion(@PathVariable String numero) {
+        return ResponseEntity.ok(clienteService.buscarPorIdentificacion(numero));
+    }
+
     @PostMapping
     public ResponseEntity<Cliente> crear(@Valid @RequestBody Cliente cliente) {
         return ResponseEntity.status(HttpStatus.CREATED).body(clienteService.crearCliente(cliente));

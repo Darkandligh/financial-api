@@ -766,7 +766,23 @@ select.form-input option {
   font-family: 'Courier New', monospace;
   letter-spacing: 0.08em;
   margin-bottom: 4px;
+  cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: color var(--dur) var(--ease);
+  user-select: none;
 }
+
+.cuenta-numero:hover { color: var(--primary); }
+.cuenta-numero.copied { color: var(--success); }
+
+.copy-icon {
+  font-size: 13px; color: var(--text-3);
+  transition: color var(--dur) var(--ease);
+  font-style: normal;
+}
+
+.cuenta-numero:hover .copy-icon { color: var(--primary); }
+.cuenta-numero.copied .copy-icon { color: var(--success); }
 
 .cuenta-saldo {
   font-size: 20px; font-weight: 800;
@@ -978,6 +994,274 @@ select.form-input option {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.16); }
+
+/* ══════════════════════════════════════════════
+   BOTONES RÁPIDOS DE CUENTA
+══════════════════════════════════════════════ */
+.cuenta-quick-actions {
+  display: flex;
+  gap: 6px;
+  margin: 10px 0 4px;
+}
+
+.btn-quick {
+  flex: 1;
+  padding: 6px 0;
+  border: none;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  letter-spacing: 0.02em;
+}
+
+.btn-quick:hover  { opacity: 0.85; transform: translateY(-1px); }
+.btn-quick:active { transform: translateY(0); }
+
+.btn-quick-green { background: rgba(16,185,129,0.15); color: #10b981; }
+.btn-quick-red   { background: rgba(239,68,68,0.15);  color: #ef4444; }
+.btn-quick-blue  { background: rgba(99,102,241,0.15); color: #818cf8; }
+
+/* ══════════════════════════════════════════════
+   MODAL DE CONFIRMACIÓN
+══════════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(6px);
+  z-index: 9000;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.modal-overlay.hidden { display: none; }
+
+.modal-dialog {
+  background: #1E293B;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 36px 32px 28px;
+  max-width: 400px; width: 90%;
+  box-shadow: var(--shadow-lg);
+  animation: scaleIn 0.22s var(--ease);
+  text-align: center;
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.modal-icon-wrap {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-size: 22px;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 20px;
+}
+
+.modal-title {
+  font-size: 17px; font-weight: 700;
+  color: var(--text-1); margin-bottom: 8px;
+}
+
+.modal-msg {
+  font-size: 13.5px; color: var(--text-2);
+  line-height: 1.55; margin-bottom: 28px;
+}
+
+.modal-actions {
+  display: flex; gap: 10px; justify-content: center;
+}
+
+.modal-actions .btn { min-width: 120px; }
+
+/* ══════════════════════════════════════════════
+   SEARCH INLINE (sin margen inferior, para forms)
+══════════════════════════════════════════════ */
+.search-inline {
+  display: flex;
+  gap: 10px;
+}
+
+.search-inline .form-input { flex: 1; }
+
+/* ══════════════════════════════════════════════
+   CONFIRMACIÓN DE CLIENTE EN CREAR CUENTA
+══════════════════════════════════════════════ */
+.cu-cliente-confirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: var(--r-sm);
+  font-size: 12.5px;
+  animation: fadeUp 0.2s var(--ease);
+}
+
+.cu-cliente-confirm.hidden  { display: none; }
+
+.cu-cliente-confirm.found {
+  background: rgba(16,185,129,0.08);
+  border: 1px solid rgba(16,185,129,0.2);
+}
+
+.cu-cliente-confirm.not-found {
+  background: var(--danger-bg);
+  border: 1px solid rgba(244,63,94,0.2);
+  color: var(--danger);
+}
+
+.cu-confirm-check { color: var(--success); font-weight: 700; }
+.cu-confirm-name  { font-weight: 600; color: var(--text-1); }
+.cu-confirm-tipo  { color: var(--text-3); font-family: monospace; font-size: 11.5px; }
+
+/* ══════════════════════════════════════════════
+   HEADER DE CLIENTE EN SECCIÓN CUENTAS
+══════════════════════════════════════════════ */
+.cuentas-cliente-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(59,130,246,0.06);
+  border: 1px solid rgba(59,130,246,0.18);
+  border-radius: var(--r-md);
+  margin-bottom: 14px;
+  animation: fadeUp 0.2s var(--ease);
+}
+
+.cuentas-cliente-nombre {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+.cuentas-cliente-id {
+  font-size: 12px;
+  color: var(--text-3);
+  font-family: monospace;
+}
+
+/* ══════════════════════════════════════════════
+   BLOQUE DE CUENTAS EN CARD CLIENTE
+══════════════════════════════════════════════ */
+.client-accounts-block {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  margin-bottom: 4px;
+}
+
+.client-accounts-block.sin-cuentas {
+  background: rgba(251,191,36,0.06);
+  border: 1px solid rgba(251,191,36,0.2);
+}
+
+.client-accounts-block.con-cuentas {
+  background: rgba(16,185,129,0.06);
+  border: 1px solid rgba(16,185,129,0.2);
+}
+
+.client-accounts-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.client-accounts-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.client-accounts-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.client-accounts-sub {
+  font-size: 11px;
+  color: var(--text-3);
+  font-family: monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+/* ══════════════════════════════════════════════
+   FILTROS DE HISTORIAL
+══════════════════════════════════════════════ */
+.tx-filter-bar {
+  display: flex; gap: 6px; flex-wrap: wrap;
+  margin-bottom: 16px; padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tx-filter-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-full);
+  background: transparent;
+  color: var(--text-2);
+  font-size: 12.5px; font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all var(--dur) var(--ease);
+}
+
+.tx-filter-btn:hover {
+  background: var(--bg-card-h);
+  color: var(--text-1);
+}
+
+.tx-filter-btn.active {
+  background: var(--primary-bg);
+  border-color: rgba(59,130,246,0.4);
+  color: var(--primary);
+}
+
+.tx-filter-count {
+  background: rgba(255,255,255,0.08);
+  border-radius: var(--r-full);
+  padding: 1px 7px;
+  font-size: 11px;
+}
+
+.tx-filter-btn.active .tx-filter-count {
+  background: rgba(59,130,246,0.2);
+}
+
+/* ══════════════════════════════════════════════
+   PREVIEW DE MONTO
+══════════════════════════════════════════════ */
+.monto-preview {
+  margin-top: 6px;
+  font-size: 20px; font-weight: 800;
+  color: var(--success);
+  letter-spacing: -0.01em;
+  animation: fadeUp 0.2s var(--ease);
+}
+
+/* ══════════════════════════════════════════════
+   AVISO DE EDAD
+══════════════════════════════════════════════ */
+.age-warn {
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--warning);
+  display: flex; align-items: center; gap: 4px;
+}
 
 /* ══════════════════════════════════════════════
    RESPONSIVE

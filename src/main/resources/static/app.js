@@ -5,6 +5,12 @@
 // ══════════════════════════════════════════════
 const API = 'http://localhost:8080';
 
+let _historialData       = [];
+let _modalResolve        = null;
+let _cuentasClienteId    = null;
+let _cuentasCliente      = null;
+let _crearCuentaClienteId = null;
+
 // ══════════════════════════════════════════════
 // NAVIGATION
 // ══════════════════════════════════════════════
@@ -51,6 +57,51 @@ function toast(title, msg = '', type = 'success') {
 }
 
 // ══════════════════════════════════════════════
+// MODAL DE CONFIRMACIÓN
+// ══════════════════════════════════════════════
+function confirmModal(title, msg, confirmLabel = 'Confirmar') {
+  return new Promise(resolve => {
+    _modalResolve = resolve;
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-msg').textContent = msg;
+    document.getElementById('modal-btn-confirm').textContent = confirmLabel;
+    document.getElementById('modal-overlay').classList.remove('hidden');
+  });
+}
+
+function _modalClose(val) {
+  document.getElementById('modal-overlay').classList.add('hidden');
+  if (_modalResolve) { _modalResolve(val); _modalResolve = null; }
+}
+
+// ══════════════════════════════════════════════
+// COPY TO CLIPBOARD
+// ══════════════════════════════════════════════
+function copyText(text, el) {
+  const exec = () => {
+    el.classList.add('copied');
+    const icon = el.querySelector('.copy-icon');
+    if (icon) icon.textContent = '✓';
+    setTimeout(() => {
+      el.classList.remove('copied');
+      if (icon) icon.textContent = '⎘';
+    }, 1500);
+  };
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(exec).catch(exec);
+  } else {
+    const ta = Object.assign(document.createElement('textarea'), {
+      value: text, style: 'position:fixed;opacity:0',
+    });
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    exec();
+  }
+}
+
+// ══════════════════════════════════════════════
 // BUTTON LOADING STATE
 // ══════════════════════════════════════════════
 function setLoading(btnId, loading) {
@@ -81,7 +132,7 @@ async function checkApi() {
   const dot  = document.getElementById('status-dot');
   const text = document.getElementById('status-text');
   try {
-    await fetch(`${API}/api/clientes/1`, { signal: AbortSignal.timeout(3000) });
+    await fetch(`${API}/`, { method: 'HEAD', signal: AbortSignal.timeout(3000) });
     dot.className = 'status-dot online';
     text.textContent = 'API Conectada';
   } catch {
@@ -146,44 +197,82 @@ async function crearCliente(e) {
 }
 
 async function buscarCliente() {
-  const id = document.getElementById('c-buscar-id').value.trim();
-  if (!id) { toast('Ingresa un ID', '', 'info'); return; }
+  const numId = document.getElementById('c-buscar-id').value.trim();
+  if (!numId) { toast('Ingresa el número de identificación', '', 'info'); return; }
   const area = document.getElementById('result-cliente');
   area.innerHTML = '<p style="color:var(--text-3);font-size:13px">Buscando...</p>';
   try {
-    const c = await apiFetch('GET', `/api/clientes/${id}`);
-    area.innerHTML = renderClienteCard(c);
+    const c = await apiFetch('GET', `/api/clientes/identificacion/${encodeURIComponent(numId)}`);
+    const cuentas = await apiFetch('GET', `/api/productos/cliente/${c.id}`).catch(() => []);
+    area.innerHTML = renderClienteCard(c, cuentas);
   } catch (err) {
     area.innerHTML = `<p style="color:var(--danger);font-size:13px;margin-top:4px">⚠ ${err.message}</p>`;
   }
 }
 
-function renderClienteCard(c) {
+function renderClienteCard(c, cuentas = []) {
+  const activas = cuentas.filter(cu => cu.estado === 'ACTIVA').length;
+  const cuentasBlock = cuentas.length === 0
+    ? `<div class="client-accounts-block sin-cuentas">
+        <div class="client-accounts-info">
+          <span class="client-accounts-icon">🏦</span>
+          <div>
+            <div class="client-accounts-label">Sin cuentas registradas</div>
+            <div class="client-accounts-sub">Este cliente aún no tiene productos financieros</div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="irCrearCuenta(${c.id})">+ Crear cuenta</button>
+      </div>`
+    : `<div class="client-accounts-block con-cuentas">
+        <div class="client-accounts-info">
+          <span class="client-accounts-icon">💳</span>
+          <div>
+            <div class="client-accounts-label">${cuentas.length} cuenta${cuentas.length !== 1 ? 's' : ''} · ${activas} activa${activas !== 1 ? 's' : ''}</div>
+            <div class="client-accounts-sub">${cuentas.map(cu => cu.numeroCuenta).join(' · ')}</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="verCuentasDeCliente(${c.id})">Ver cuentas</button>
+      </div>`;
+
   return `
     <div class="result-cliente-card">
       <div class="result-header">
         <div>
           <div class="result-name">${c.nombres} ${c.apellidos}</div>
-          <div class="result-id">ID #${c.id}</div>
+          <div class="result-id">${c.tipoIdentificacion} ${c.numeroIdentificacion}</div>
         </div>
       </div>
       <div class="result-grid">
-        <div class="result-field"><label>Tipo ID</label><span>${c.tipoIdentificacion}</span></div>
-        <div class="result-field"><label>Número ID</label><span>${c.numeroIdentificacion}</span></div>
         <div class="result-field"><label>Email</label><span>${c.email}</span></div>
         <div class="result-field"><label>Nacimiento</label><span>${c.fechaNacimiento}</span></div>
         <div class="result-field"><label>Creado</label><span>${formatDate(c.fechaCreacion)}</span></div>
         <div class="result-field"><label>Modificado</label><span>${formatDate(c.fechaModificacion)}</span></div>
       </div>
-      <div class="result-actions">
+      ${cuentasBlock}
+      <div class="result-actions" style="margin-top:10px">
         <button class="btn btn-danger btn-sm" onclick="eliminarCliente(${c.id})">Eliminar cliente</button>
-        <button class="btn btn-secondary btn-sm" onclick="verCuentasDeCliente(${c.id})">Ver cuentas</button>
       </div>
     </div>`;
 }
 
+async function irCrearCuenta(clienteId) {
+  showSection('cuentas');
+  _crearCuentaClienteId = clienteId;
+  const c = await apiFetch('GET', `/api/clientes/${clienteId}`).catch(() => null);
+  if (c) {
+    document.getElementById('cu-clienteNumId').value = c.numeroIdentificacion;
+    const confirm = document.getElementById('cu-cliente-confirm');
+    confirm.className = 'cu-cliente-confirm found';
+    confirm.innerHTML = `
+      <span class="cu-confirm-check">✓</span>
+      <span class="cu-confirm-name">${c.nombres} ${c.apellidos}</span>
+      <span class="cu-confirm-tipo">${c.tipoIdentificacion} ${c.numeroIdentificacion}</span>`;
+  }
+}
+
 async function eliminarCliente(id) {
-  if (!confirm(`¿Eliminar el cliente #${id}? Esta acción no se puede deshacer.`)) return;
+  const ok = await confirmModal(`¿Eliminar cliente #${id}?`, 'Esta acción es permanente y no se puede deshacer.', 'Eliminar');
+  if (!ok) return;
   try {
     await apiFetch('DELETE', `/api/clientes/${id}`);
     toast('Cliente eliminado', `ID #${id} eliminado correctamente`);
@@ -194,27 +283,60 @@ async function eliminarCliente(id) {
   }
 }
 
-function verCuentasDeCliente(id) {
+async function verCuentasDeCliente(id) {
   showSection('cuentas');
-  document.getElementById('cu-buscar-id').value = id;
-  listarCuentas();
+  _cuentasClienteId = id;
+  const area = document.getElementById('result-cuentas');
+  area.innerHTML = '<p style="color:var(--text-3);font-size:13px">Cargando...</p>';
+  _cuentasCliente = await apiFetch('GET', `/api/clientes/${id}`).catch(() => null);
+  if (_cuentasCliente) {
+    document.getElementById('cu-buscar-id').value = _cuentasCliente.numeroIdentificacion;
+  }
+  await _refreshCuentas(area);
 }
 
 // ══════════════════════════════════════════════
 // CUENTAS
 // ══════════════════════════════════════════════
+async function buscarClienteParaCuenta() {
+  const numId = document.getElementById('cu-clienteNumId').value.trim();
+  if (!numId) { toast('Ingresa el número de identificación', '', 'info'); return; }
+  const confirm = document.getElementById('cu-cliente-confirm');
+  confirm.className = 'cu-cliente-confirm';
+  confirm.innerHTML = '<span style="color:var(--text-3);font-size:12px">Buscando...</span>';
+  try {
+    const c = await apiFetch('GET', `/api/clientes/identificacion/${encodeURIComponent(numId)}`);
+    _crearCuentaClienteId = c.id;
+    confirm.className = 'cu-cliente-confirm found';
+    confirm.innerHTML = `
+      <span class="cu-confirm-check">✓</span>
+      <span class="cu-confirm-name">${c.nombres} ${c.apellidos}</span>
+      <span class="cu-confirm-tipo">${c.tipoIdentificacion} ${c.numeroIdentificacion}</span>`;
+  } catch (err) {
+    _crearCuentaClienteId = null;
+    confirm.className = 'cu-cliente-confirm not-found';
+    confirm.innerHTML = `<span>⚠ ${err.message}</span>`;
+  }
+}
+
 async function crearCuenta(e) {
   e.preventDefault();
+  if (!_crearCuentaClienteId) {
+    toast('Primero busca y confirma el cliente', '', 'info');
+    return;
+  }
   setLoading('btn-crear-cuenta', true);
   try {
     const tipoCuenta = document.querySelector('input[name="tipoCuenta"]:checked').value;
     const data = await apiFetch('POST', '/api/productos', {
-      clienteId: parseInt(document.getElementById('cu-clienteId').value),
+      clienteId: _crearCuentaClienteId,
       tipoCuenta,
       exentaGMF: document.getElementById('cu-gmf').checked,
     });
     toast('Cuenta creada', `${data.tipoCuenta} — ${data.numeroCuenta}`);
     e.target.reset();
+    _crearCuentaClienteId = null;
+    document.getElementById('cu-cliente-confirm').className = 'cu-cliente-confirm hidden';
   } catch (err) {
     toast('Error al crear cuenta', err.message, 'error');
   } finally {
@@ -223,28 +345,53 @@ async function crearCuenta(e) {
 }
 
 async function listarCuentas() {
-  const id = document.getElementById('cu-buscar-id').value.trim();
-  if (!id) { toast('Ingresa el ID del cliente', '', 'info'); return; }
+  const numId = document.getElementById('cu-buscar-id').value.trim();
+  if (!numId) { toast('Ingresa el número de identificación', '', 'info'); return; }
   const area = document.getElementById('result-cuentas');
-  area.innerHTML = '<p style="color:var(--text-3);font-size:13px">Cargando...</p>';
+  area.innerHTML = '<p style="color:var(--text-3);font-size:13px">Buscando...</p>';
   try {
-    const list = await apiFetch('GET', `/api/productos/cliente/${id}`);
+    const c = await apiFetch('GET', `/api/clientes/identificacion/${encodeURIComponent(numId)}`);
+    _cuentasClienteId = c.id;
+    _cuentasCliente   = c;
+    await _refreshCuentas(area);
+  } catch (err) {
+    area.innerHTML = `<p style="color:var(--danger);font-size:13px;margin-top:4px">⚠ ${err.message}</p>`;
+  }
+}
+
+async function _refreshCuentas(area = document.getElementById('result-cuentas')) {
+  if (!_cuentasClienteId) return;
+  try {
+    const list = await apiFetch('GET', `/api/productos/cliente/${_cuentasClienteId}`);
+    const header = _cuentasCliente ? `
+      <div class="cuentas-cliente-header">
+        <div class="cuentas-cliente-nombre">${_cuentasCliente.nombres} ${_cuentasCliente.apellidos}</div>
+        <div class="cuentas-cliente-id">${_cuentasCliente.tipoIdentificacion} ${_cuentasCliente.numeroIdentificacion}</div>
+      </div>` : '';
     if (!list.length) {
-      area.innerHTML = `<div class="empty-state"><div class="empty-icon">🏦</div><p>Este cliente no tiene cuentas registradas.</p></div>`;
+      area.innerHTML = header + `<div class="empty-state"><div class="empty-icon">🏦</div><p>Este cliente no tiene cuentas registradas.</p></div>`;
       return;
     }
-    area.innerHTML = list.map(renderCuentaCard).join('');
+    area.innerHTML = header + list.map(renderCuentaCard).join('');
   } catch (err) {
     area.innerHTML = `<p style="color:var(--danger);font-size:13px;margin-top:4px">⚠ ${err.message}</p>`;
   }
 }
 
 function renderCuentaCard(p) {
+  const esActiva = p.estado === 'ACTIVA';
   const acciones = p.estado !== 'CANCELADA' ? `
-    <button class="btn btn-secondary btn-sm" onclick="cambiarEstado(${p.id}, '${p.estado === 'ACTIVA' ? 'INACTIVA' : 'ACTIVA'}')">
-      ${p.estado === 'ACTIVA' ? 'Inactivar' : 'Activar'}
+    <button class="btn btn-secondary btn-sm" onclick="cambiarEstado(${p.id}, '${esActiva ? 'INACTIVA' : 'ACTIVA'}')">
+      ${esActiva ? 'Inactivar' : 'Activar'}
     </button>
-    ${p.estado === 'ACTIVA' ? `<button class="btn btn-danger btn-sm" onclick="cancelarCuenta(${p.id})">Cancelar</button>` : ''}
+    ${esActiva ? `<button class="btn btn-danger btn-sm" onclick="cancelarCuenta(${p.id})">Cancelar</button>` : ''}
+  ` : '';
+  const accionesRapidas = esActiva ? `
+    <div class="cuenta-quick-actions">
+      <button class="btn-quick btn-quick-green" onclick="irOperacion('deposito', '${p.numeroCuenta}')">+ Depositar</button>
+      <button class="btn-quick btn-quick-red"   onclick="irOperacion('retiro',   '${p.numeroCuenta}')">− Retirar</button>
+      <button class="btn-quick btn-quick-blue"  onclick="irOperacion('transferencia', '${p.numeroCuenta}')">↔ Transferir</button>
+    </div>
   ` : '';
   return `
     <div class="cuenta-card">
@@ -252,8 +399,11 @@ function renderCuentaCard(p) {
         <div class="cuenta-tipo">${p.tipoCuenta}</div>
         ${badgeEstado(p.estado)}
       </div>
-      <div class="cuenta-numero">${p.numeroCuenta}</div>
+      <div class="cuenta-numero" onclick="copyText('${p.numeroCuenta}', this)" title="Clic para copiar">
+        ${p.numeroCuenta}<em class="copy-icon">⎘</em>
+      </div>
       <div class="cuenta-saldo">${formatMoney(p.saldo)}</div>
+      ${accionesRapidas}
       <div class="result-actions">${acciones}
         <button class="btn btn-secondary btn-sm" onclick="irHistorial('${p.numeroCuenta}')">Historial</button>
       </div>
@@ -264,20 +414,19 @@ async function cambiarEstado(id, nuevoEstado) {
   try {
     await apiFetch('PATCH', `/api/productos/${id}/estado`, { estado: nuevoEstado });
     toast('Estado actualizado', `Cuenta ${nuevoEstado.toLowerCase()}`);
-    const clienteId = document.getElementById('cu-buscar-id').value;
-    if (clienteId) listarCuentas();
+    _refreshCuentas();
   } catch (err) {
     toast('Error', err.message, 'error');
   }
 }
 
 async function cancelarCuenta(id) {
-  if (!confirm('¿Cancelar esta cuenta? Solo es posible si el saldo es $0.')) return;
+  const ok = await confirmModal('¿Cancelar esta cuenta?', 'Solo es posible si el saldo es $0. El estado cambiará a CANCELADA de forma permanente.', 'Cancelar cuenta');
+  if (!ok) return;
   try {
     await apiFetch('POST', `/api/productos/${id}/cancelar`);
     toast('Cuenta cancelada', 'El estado se actualizó a CANCELADA');
-    const clienteId = document.getElementById('cu-buscar-id').value;
-    if (clienteId) listarCuentas();
+    _refreshCuentas();
   } catch (err) {
     toast('No se pudo cancelar', err.message, 'error');
   }
@@ -287,6 +436,15 @@ function irHistorial(numeroCuenta) {
   showSection('historial');
   document.getElementById('h-cuenta').value = numeroCuenta;
   buscarHistorial();
+}
+
+function irOperacion(tipo, numeroCuenta) {
+  showSection('operaciones');
+  showOpTab(tipo);
+  const campos = { deposito: 'd-cuenta', retiro: 'r-cuenta', transferencia: 't-origen' };
+  const campo = document.getElementById(campos[tipo]);
+  campo.value = numeroCuenta;
+  campo.focus();
 }
 
 // ══════════════════════════════════════════════
@@ -394,41 +552,53 @@ async function buscarHistorial() {
   area.innerHTML = '<p style="color:var(--text-3);font-size:13px;padding-top:12px">Cargando movimientos...</p>';
   try {
     const list = await apiFetch('GET', `/api/transacciones/cuenta/${cuenta}`);
+    _historialData = list;
     if (!list.length) {
       area.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>Esta cuenta no tiene movimientos registrados.</p></div>`;
       return;
     }
-    area.innerHTML = `
-      <table class="history-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Tipo</th>
-            <th>Monto</th>
-            <th>Origen</th>
-            <th>Destino</th>
-            <th>Fecha</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${list.map(t => {
-            const montoClass = t.tipo === 'DEPOSITO' ? 'monto-positive' : t.tipo === 'RETIRO' ? 'monto-negative' : 'monto-neutral';
-            const sign = t.tipo === 'DEPOSITO' ? '+' : t.tipo === 'RETIRO' ? '-' : '↔';
-            return `
-              <tr>
-                <td style="color:var(--text-3)">#${t.id}</td>
-                <td>${badgeTx(t.tipo)}</td>
-                <td class="${montoClass}">${sign} ${formatMoney(t.monto)}</td>
-                <td style="font-family:monospace;font-size:12px">${t.numeroCuentaOrigen}</td>
-                <td style="font-family:monospace;font-size:12px">${t.numeroCuentaDestino || '—'}</td>
-                <td style="color:var(--text-2)">${formatDate(t.fecha)}</td>
-              </tr>`;
-          }).join('')}
-        </tbody>
-      </table>`;
+    renderHistorialResult('TODOS');
   } catch (err) {
     area.innerHTML = `<p style="color:var(--danger);font-size:13px;padding-top:12px">⚠ ${err.message}</p>`;
   }
+}
+
+function renderHistorialResult(filter) {
+  const area = document.getElementById('result-historial');
+  const tipos = ['TODOS', 'DEPOSITO', 'RETIRO', 'TRANSFERENCIA'];
+  const labels = { TODOS: 'Todos', DEPOSITO: 'Depósitos', RETIRO: 'Retiros', TRANSFERENCIA: 'Transferencias' };
+  const filtered = filter === 'TODOS' ? _historialData : _historialData.filter(t => t.tipo === filter);
+  const counts = {};
+  tipos.forEach(tp => { counts[tp] = tp === 'TODOS' ? _historialData.length : _historialData.filter(x => x.tipo === tp).length; });
+
+  const filterBar = `<div class="tx-filter-bar">
+    ${tipos.map(tp => `
+      <button class="tx-filter-btn${filter === tp ? ' active' : ''}" onclick="renderHistorialResult('${tp}')">
+        ${labels[tp]} <span class="tx-filter-count">${counts[tp]}</span>
+      </button>`).join('')}
+  </div>`;
+
+  const tableRows = filtered.map(t => {
+    const montoClass = t.tipo === 'DEPOSITO' ? 'monto-positive' : t.tipo === 'RETIRO' ? 'monto-negative' : 'monto-neutral';
+    const sign = t.tipo === 'DEPOSITO' ? '+' : t.tipo === 'RETIRO' ? '-' : '↔';
+    return `<tr>
+      <td style="color:var(--text-3)">#${t.id}</td>
+      <td>${badgeTx(t.tipo)}</td>
+      <td class="${montoClass}">${sign} ${formatMoney(t.monto)}</td>
+      <td style="font-family:monospace;font-size:12px">${t.numeroCuentaOrigen}</td>
+      <td style="font-family:monospace;font-size:12px">${t.numeroCuentaDestino || '—'}</td>
+      <td style="color:var(--text-2)">${formatDate(t.fecha)}</td>
+    </tr>`;
+  }).join('');
+
+  const tableHtml = filtered.length === 0
+    ? `<div class="empty-state"><div class="empty-icon">📋</div><p>No hay movimientos de tipo "${labels[filter]}".</p></div>`
+    : `<table class="history-table">
+        <thead><tr><th>#</th><th>Tipo</th><th>Monto</th><th>Origen</th><th>Destino</th><th>Fecha</th></tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>`;
+
+  area.innerHTML = filterBar + tableHtml;
 }
 
 // ══════════════════════════════════════════════
@@ -454,5 +624,52 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('cu-buscar-id').addEventListener('keydown', e => {
     if (e.key === 'Enter') listarCuentas();
+  });
+
+  document.getElementById('cu-clienteNumId').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); buscarClienteParaCuenta(); }
+  });
+  document.getElementById('cu-clienteNumId').addEventListener('input', () => {
+    _crearCuentaClienteId = null;
+    document.getElementById('cu-cliente-confirm').className = 'cu-cliente-confirm hidden';
+  });
+
+  // Modal buttons
+  document.getElementById('modal-btn-confirm').addEventListener('click', () => _modalClose(true));
+  document.getElementById('modal-btn-cancel').addEventListener('click', () => _modalClose(false));
+  document.getElementById('modal-overlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) _modalClose(false);
+  });
+
+  // Monto preview en tiempo real
+  ['d', 'r', 't'].forEach(prefix => {
+    const input = document.getElementById(`${prefix}-monto`);
+    const preview = document.createElement('p');
+    preview.className = 'monto-preview hidden';
+    input.closest('.form-group').appendChild(preview);
+    input.addEventListener('input', () => {
+      const val = parseFloat(input.value);
+      if (val > 0) { preview.textContent = formatMoney(val); preview.classList.remove('hidden'); }
+      else { preview.classList.add('hidden'); }
+    });
+  });
+
+  // Validación de edad mínima (18 años)
+  const fechaNacInput = document.getElementById('c-fechaNac');
+  const ageWarn = document.createElement('p');
+  ageWarn.className = 'age-warn hidden';
+  fechaNacInput.closest('.form-group').appendChild(ageWarn);
+  fechaNacInput.addEventListener('change', () => {
+    const birth = new Date(fechaNacInput.value);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    if (age < 18) {
+      ageWarn.textContent = `⚠ El cliente tiene ${age} año${age !== 1 ? 's' : ''}. Se requieren al menos 18 años.`;
+      ageWarn.classList.remove('hidden');
+    } else {
+      ageWarn.classList.add('hidden');
+    }
   });
 });
