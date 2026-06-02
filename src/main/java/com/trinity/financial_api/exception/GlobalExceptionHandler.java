@@ -49,13 +49,14 @@ public class GlobalExceptionHandler {
                 .build());
     }
 
+
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
-        return ResponseEntity
-            .status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(ErrorResponse.builder()
-                .mensaje("Ocurrió un error interno en el servidor")
-                .codigo(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .build());
+    public ResponseEntity<?> handleException(Exception ex) {
+        ex.printStackTrace(); // 🔥 IMPORTANTE
+        return ResponseEntity.status(500).body(Map.of(
+                "mensaje", ex.getMessage(),
+                "codigo", 500
+        ));
     }
+
 }
