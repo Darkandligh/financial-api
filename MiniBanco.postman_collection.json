@@ -1,0 +1,513 @@
+{
+  "info": {
+    "name": "Financial API - MiniBanco",
+    "description": "Colección completa de pruebas: Clientes, Productos y Transacciones.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",          "value": "http://localhost:8080" },
+    { "key": "clienteId1",       "value": "" },
+    { "key": "clienteId2",       "value": "" },
+    { "key": "productoId1",      "value": "" },
+    { "key": "productoId2",      "value": "" },
+    { "key": "productoCancelId",       "value": "" },
+    { "key": "productoNumeroCuenta1", "value": "" },
+    { "key": "productoNumeroCuenta2", "value": "" }
+  ],
+  "item": [
+
+    {
+      "name": "01 - Clientes",
+      "item": [
+
+        {
+          "name": "✅ Crear Cliente 1",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+            "pm.test(\"Retorna ID\", () => pm.expect(pm.response.json().id).to.be.a('number'));",
+            "pm.collectionVariables.set(\"clienteId1\", pm.response.json().id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"tipoIdentificacion\": \"CC\",\n  \"numeroIdentificacion\": \"1099887766\",\n  \"nombres\": \"Laura\",\n  \"apellidos\": \"Gomez\",\n  \"email\": \"laura.gomez@email.com\",\n  \"fechaNacimiento\": \"1990-03-15\"\n}"
+            },
+            "url": "{{baseUrl}}/api/clientes"
+          }
+        },
+
+        {
+          "name": "✅ Crear Cliente 2 (para eliminar)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set(\"clienteId2\", pm.response.json().id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"tipoIdentificacion\": \"CC\",\n  \"numeroIdentificacion\": \"9988776655\",\n  \"nombres\": \"Carlos\",\n  \"apellidos\": \"Ruiz\",\n  \"email\": \"carlos.ruiz@email.com\",\n  \"fechaNacimiento\": \"1985-07-20\"\n}"
+            },
+            "url": "{{baseUrl}}/api/clientes"
+          }
+        },
+
+        {
+          "name": "❌ Error: Cliente menor de edad",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+            "pm.test(\"Mensaje de error\", () => pm.expect(pm.response.json().mensaje).to.include(\"mayor de edad\"));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"tipoIdentificacion\": \"CC\",\n  \"numeroIdentificacion\": \"1122334455\",\n  \"nombres\": \"Pedro\",\n  \"apellidos\": \"Joven\",\n  \"email\": \"pedro.joven@email.com\",\n  \"fechaNacimiento\": \"2015-01-01\"\n}"
+            },
+            "url": "{{baseUrl}}/api/clientes"
+          }
+        },
+
+        {
+          "name": "❌ Error: Email duplicado",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+            "pm.test(\"Mensaje de error\", () => pm.expect(pm.response.json().mensaje).to.include(\"email\"));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"tipoIdentificacion\": \"CC\",\n  \"numeroIdentificacion\": \"5544332211\",\n  \"nombres\": \"Ana\",\n  \"apellidos\": \"Lopez\",\n  \"email\": \"laura.gomez@email.com\",\n  \"fechaNacimiento\": \"1988-05-10\"\n}"
+            },
+            "url": "{{baseUrl}}/api/clientes"
+          }
+        },
+
+        {
+          "name": "❌ Error: Número de identificación duplicado",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+            "pm.test(\"Mensaje de error\", () => pm.expect(pm.response.json().mensaje).to.include(\"identificación\"));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"tipoIdentificacion\": \"CC\",\n  \"numeroIdentificacion\": \"1099887766\",\n  \"nombres\": \"Mario\",\n  \"apellidos\": \"Torres\",\n  \"email\": \"mario.torres@email.com\",\n  \"fechaNacimiento\": \"1992-11-25\"\n}"
+            },
+            "url": "{{baseUrl}}/api/clientes"
+          }
+        },
+
+        {
+          "name": "❌ Error: Campos inválidos (nombre corto y email sin formato)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+            "pm.test(\"Errores de validación\", () => pm.expect(pm.response.json().errores).to.be.an('object'));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"tipoIdentificacion\": \"CC\",\n  \"numeroIdentificacion\": \"7766554433\",\n  \"nombres\": \"A\",\n  \"apellidos\": \"B\",\n  \"email\": \"email-invalido\",\n  \"fechaNacimiento\": \"1990-01-01\"\n}"
+            },
+            "url": "{{baseUrl}}/api/clientes"
+          }
+        },
+
+        {
+          "name": "✅ Actualizar Cliente 1",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+            "pm.test(\"Nombre actualizado\", () => pm.expect(pm.response.json().nombres).to.eql(\"Laura Maria\"));"
+          ]}}],
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"tipoIdentificacion\": \"CC\",\n  \"numeroIdentificacion\": \"1099887766\",\n  \"nombres\": \"Laura Maria\",\n  \"apellidos\": \"Gomez Perez\",\n  \"email\": \"laura.gomez@email.com\",\n  \"fechaNacimiento\": \"1990-03-15\"\n}"
+            },
+            "url": "{{baseUrl}}/api/clientes/{{clienteId1}}"
+          }
+        },
+
+        {
+          "name": "❌ Error: Actualizar cliente inexistente",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+            "pm.test(\"Mensaje de error\", () => pm.expect(pm.response.json().mensaje).to.include(\"No existe\"));"
+          ]}}],
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"tipoIdentificacion\": \"CC\",\n  \"numeroIdentificacion\": \"0000000000\",\n  \"nombres\": \"Nadie\",\n  \"apellidos\": \"Nadie\",\n  \"email\": \"nadie@email.com\",\n  \"fechaNacimiento\": \"1990-01-01\"\n}"
+            },
+            "url": "{{baseUrl}}/api/clientes/99999"
+          }
+        },
+
+        {
+          "name": "✅ Eliminar Cliente 2 (sin productos)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 204\", () => pm.response.to.have.status(204));"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/clientes/{{clienteId2}}"
+          }
+        }
+
+      ]
+    },
+
+    {
+      "name": "02 - Productos",
+      "item": [
+
+        {
+          "name": "✅ Crear Cuenta Ahorro (Cliente 1)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+            "pm.test(\"Tipo AHORRO\", () => pm.expect(pm.response.json().tipoCuenta).to.eql(\"AHORRO\"));",
+            "pm.test(\"Estado ACTIVA\", () => pm.expect(pm.response.json().estado).to.eql(\"ACTIVA\"));",
+            "pm.test(\"Número inicia en 53\", () => pm.expect(pm.response.json().numeroCuenta).to.match(/^53/));",
+            "pm.collectionVariables.set(\"productoId1\", pm.response.json().id);",
+            "pm.collectionVariables.set(\"productoNumeroCuenta1\", pm.response.json().numeroCuenta);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"clienteId\": {{clienteId1}},\n  \"tipoCuenta\": \"AHORRO\",\n  \"exentaGMF\": false\n}"
+            },
+            "url": "{{baseUrl}}/api/productos"
+          }
+        },
+
+        {
+          "name": "✅ Crear Cuenta Corriente (Cliente 1)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+            "pm.test(\"Tipo CORRIENTE\", () => pm.expect(pm.response.json().tipoCuenta).to.eql(\"CORRIENTE\"));",
+            "pm.test(\"Número inicia en 33\", () => pm.expect(pm.response.json().numeroCuenta).to.match(/^33/));",
+            "pm.collectionVariables.set(\"productoId2\", pm.response.json().id);",
+            "pm.collectionVariables.set(\"productoNumeroCuenta2\", pm.response.json().numeroCuenta);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"clienteId\": {{clienteId1}},\n  \"tipoCuenta\": \"CORRIENTE\",\n  \"exentaGMF\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/productos"
+          }
+        },
+
+        {
+          "name": "✅ Crear Cuenta para Cancelar (saldo $0)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set(\"productoCancelId\", pm.response.json().id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"clienteId\": {{clienteId1}},\n  \"tipoCuenta\": \"AHORRO\",\n  \"exentaGMF\": false\n}"
+            },
+            "url": "{{baseUrl}}/api/productos"
+          }
+        },
+
+        {
+          "name": "❌ Error: Crear producto con cliente inexistente",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+            "pm.test(\"Mensaje de error\", () => pm.expect(pm.response.json().mensaje).to.include(\"No existe\"));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"clienteId\": 99999,\n  \"tipoCuenta\": \"AHORRO\",\n  \"exentaGMF\": false\n}"
+            },
+            "url": "{{baseUrl}}/api/productos"
+          }
+        },
+
+        {
+          "name": "✅ Listar productos del Cliente 1",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+            "pm.test(\"Retorna lista\", () => pm.expect(pm.response.json()).to.be.an('array'));",
+            "pm.test(\"Tiene 3 productos\", () => pm.expect(pm.response.json().length).to.eql(3));"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/productos/cliente/{{clienteId1}}"
+          }
+        },
+
+        {
+          "name": "✅ Inactivar Cuenta Ahorro",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+            "pm.test(\"Estado INACTIVA\", () => pm.expect(pm.response.json().estado).to.eql(\"INACTIVA\"));"
+          ]}}],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"estado\": \"INACTIVA\"\n}"
+            },
+            "url": "{{baseUrl}}/api/productos/{{productoId1}}/estado"
+          }
+        },
+
+        {
+          "name": "✅ Reactivar Cuenta Ahorro",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+            "pm.test(\"Estado ACTIVA\", () => pm.expect(pm.response.json().estado).to.eql(\"ACTIVA\"));"
+          ]}}],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"estado\": \"ACTIVA\"\n}"
+            },
+            "url": "{{baseUrl}}/api/productos/{{productoId1}}/estado"
+          }
+        },
+
+        {
+          "name": "❌ Error: Cambiar estado a CANCELADA vía /estado",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+            "pm.test(\"Mensaje de error\", () => pm.expect(pm.response.json().mensaje).to.include(\"cancelar\"));"
+          ]}}],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"estado\": \"CANCELADA\"\n}"
+            },
+            "url": "{{baseUrl}}/api/productos/{{productoId1}}/estado"
+          }
+        },
+
+        {
+          "name": "✅ Cancelar cuenta con saldo $0",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+            "pm.test(\"Estado CANCELADA\", () => pm.expect(pm.response.json().estado).to.eql(\"CANCELADA\"));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/productos/{{productoCancelId}}/cancelar"
+          }
+        },
+
+        {
+          "name": "❌ Error: Cancelar cuenta ya cancelada",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+            "pm.test(\"Mensaje de error\", () => pm.expect(pm.response.json().mensaje).to.include(\"ya está cancelada\"));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/productos/{{productoCancelId}}/cancelar"
+          }
+        },
+
+        {
+          "name": "❌ Error: Eliminar Cliente 1 con productos vinculados",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+            "pm.test(\"Mensaje de error\", () => pm.expect(pm.response.json().mensaje).to.include(\"productos vinculados\"));"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/clientes/{{clienteId1}}"
+          }
+        }
+
+      ]
+    },
+
+    {
+      "name": "03 - Transacciones",
+      "item": [
+
+        {
+          "name": "✅ Depósito en Cuenta Ahorro ($1.000.000)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+            "pm.test(\"Tipo DEPOSITO\", () => pm.expect(pm.response.json().tipo).to.eql(\"DEPOSITO\"));",
+            "pm.test(\"Monto correcto\", () => pm.expect(pm.response.json().monto).to.eql(1000000));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"numeroCuenta\": \"{{productoNumeroCuenta1}}\",\n  \"monto\": 1000000\n}"
+            },
+            "url": "{{baseUrl}}/api/transacciones/deposito"
+          }
+        },
+
+        {
+          "name": "✅ Depósito en Cuenta Corriente ($500.000)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+            "pm.test(\"Tipo DEPOSITO\", () => pm.expect(pm.response.json().tipo).to.eql(\"DEPOSITO\"));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"numeroCuenta\": \"{{productoNumeroCuenta2}}\",\n  \"monto\": 500000\n}"
+            },
+            "url": "{{baseUrl}}/api/transacciones/deposito"
+          }
+        },
+
+        {
+          "name": "❌ Error: Depósito con monto inválido ($0)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 400\", () => pm.response.to.have.status(400));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"numeroCuenta\": \"{{productoNumeroCuenta1}}\",\n  \"monto\": 0\n}"
+            },
+            "url": "{{baseUrl}}/api/transacciones/deposito"
+          }
+        },
+
+        {
+          "name": "❌ Error: Depósito en cuenta inexistente",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+            "pm.test(\"Mensaje de error\", () => pm.expect(pm.response.json().mensaje).to.include(\"No existe\"));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"numeroCuenta\": \"5300000000\",\n  \"monto\": 100000\n}"
+            },
+            "url": "{{baseUrl}}/api/transacciones/deposito"
+          }
+        },
+
+        {
+          "name": "✅ Retiro de Cuenta Ahorro ($200.000)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+            "pm.test(\"Tipo RETIRO\", () => pm.expect(pm.response.json().tipo).to.eql(\"RETIRO\"));",
+            "pm.test(\"Monto correcto\", () => pm.expect(pm.response.json().monto).to.eql(200000));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"numeroCuenta\": \"{{productoNumeroCuenta1}}\",\n  \"monto\": 200000\n}"
+            },
+            "url": "{{baseUrl}}/api/transacciones/retiro"
+          }
+        },
+
+        {
+          "name": "❌ Error: Retiro con saldo insuficiente",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+            "pm.test(\"Mensaje saldo\", () => pm.expect(pm.response.json().mensaje).to.include(\"Saldo insuficiente\"));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"numeroCuenta\": \"{{productoNumeroCuenta1}}\",\n  \"monto\": 99999999\n}"
+            },
+            "url": "{{baseUrl}}/api/transacciones/retiro"
+          }
+        },
+
+        {
+          "name": "✅ Transferencia Ahorro → Corriente ($100.000)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+            "pm.test(\"Tipo TRANSFERENCIA\", () => pm.expect(pm.response.json().tipo).to.eql(\"TRANSFERENCIA\"));",
+            "pm.test(\"Tiene cuenta destino\", () => pm.expect(pm.response.json().numeroCuentaDestino).to.not.be.null);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"cuentaOrigen\": \"{{productoNumeroCuenta1}}\",\n  \"cuentaDestino\": \"{{productoNumeroCuenta2}}\",\n  \"monto\": 100000\n}"
+            },
+            "url": "{{baseUrl}}/api/transacciones/transferencia"
+          }
+        },
+
+        {
+          "name": "❌ Error: Transferencia a la misma cuenta",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+            "pm.test(\"Mensaje de error\", () => pm.expect(pm.response.json().mensaje).to.include(\"misma\"));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"cuentaOrigen\": \"{{productoNumeroCuenta1}}\",\n  \"cuentaDestino\": \"{{productoNumeroCuenta1}}\",\n  \"monto\": 50000\n}"
+            },
+            "url": "{{baseUrl}}/api/transacciones/transferencia"
+          }
+        },
+
+        {
+          "name": "❌ Error: Transferencia con saldo insuficiente",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+            "pm.test(\"Mensaje saldo\", () => pm.expect(pm.response.json().mensaje).to.include(\"Saldo insuficiente\"));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"cuentaOrigen\": \"{{productoNumeroCuenta1}}\",\n  \"cuentaDestino\": \"{{productoNumeroCuenta2}}\",\n  \"monto\": 99999999\n}"
+            },
+            "url": "{{baseUrl}}/api/transacciones/transferencia"
+          }
+        },
+
+        {
+          "name": "❌ Error: Cancelar cuenta con saldo mayor a $0",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+            "pm.test(\"Mensaje de error\", () => pm.expect(pm.response.json().mensaje).to.include(\"saldo igual a $0\"));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/productos/{{productoId1}}/cancelar"
+          }
+        }
+
+      ]
+    }
+
+  ]
+}

@@ -12,8 +12,10 @@ API REST para la gestión de clientes, cuentas financieras y transacciones banca
 | Spring Boot | 3.5.14 |
 | Spring Data JPA | - |
 | Spring Validation | - |
+| springdoc-openapi (Swagger) | 2.8.8 |
 | PostgreSQL | 14+ |
 | Lombok | - |
+| JUnit 5 + Mockito | - |
 | Maven | 3.x |
 
 ---
@@ -32,7 +34,7 @@ CREATE DATABASE financial_db;
 
 ## Configuración
 
-Editar `src/main/resources/application.properties` con las credenciales de tu PostgreSQL:
+Editar `src/main/resources/application.properties`:
 
 ```properties
 spring.datasource.url=jdbc:postgresql://localhost:5432/financial_db
@@ -50,7 +52,9 @@ Las tablas se crean automáticamente al levantar la app (`ddl-auto=update`).
 ./mvnw spring-boot:run
 ```
 
-La API quedará disponible en `http://localhost:8080`.
+La API queda disponible en `http://localhost:8080`.
+
+Documentación Swagger UI: `http://localhost:8080/swagger-ui/index.html`
 
 ---
 
@@ -58,6 +62,8 @@ La API quedará disponible en `http://localhost:8080`.
 
 ```
 src/main/java/com/trinity/financial_api/
+├── config/
+│   └── OpenApiConfig.java
 ├── controller/
 │   ├── ClienteController.java
 │   ├── ProductoController.java
@@ -75,15 +81,16 @@ src/main/java/com/trinity/financial_api/
 │   ├── ProductoRepository.java
 │   └── TransaccionRepository.java
 ├── dto/
+│   ├── EstadoRequest.java
 │   ├── ProductoRequest.java
 │   ├── ProductoResponse.java
 │   ├── TransaccionSimpleRequest.java
 │   ├── TransferenciaRequest.java
 │   └── TransaccionResponse.java
 ├── enums/
-│   ├── TipoCuenta.java
-│   ├── EstadoCuenta.java
-│   └── TipoTransaccion.java
+│   ├── TipoCuenta.java       (AHORRO, CORRIENTE)
+│   ├── EstadoCuenta.java     (ACTIVA, INACTIVA, CANCELADA)
+│   └── TipoTransaccion.java  (DEPOSITO, RETIRO, TRANSFERENCIA)
 └── exception/
     ├── BusinessException.java
     ├── ErrorResponse.java
@@ -94,19 +101,26 @@ src/main/java/com/trinity/financial_api/
 
 ## Endpoints
 
-### Clientes — `POST /api/clientes`
+### Clientes — `/api/clientes`
 
-Crea un nuevo cliente. El cliente debe ser mayor de 18 años. El número de identificación y el email deben ser únicos.
+| Método | Endpoint | Descripción |
+|---|---|---|
+| `POST` | `/api/clientes` | Crear cliente |
+| `GET` | `/api/clientes/{id}` | Consultar cliente por ID |
+| `PUT` | `/api/clientes/{id}` | Actualizar cliente |
+| `DELETE` | `/api/clientes/{id}` | Eliminar cliente |
+
+#### POST /api/clientes — Crear cliente
 
 **Request:**
 ```json
 {
   "tipoIdentificacion": "CC",
-  "numeroIdentificacion": "1234567890",
-  "nombres": "Juan",
-  "apellidos": "Pérez",
-  "email": "juan.perez@email.com",
-  "fechaNacimiento": "1990-05-15"
+  "numeroIdentificacion": "1099887766",
+  "nombres": "Laura",
+  "apellidos": "Gómez",
+  "email": "laura.gomez@email.com",
+  "fechaNacimiento": "1990-03-15"
 }
 ```
 
@@ -115,24 +129,39 @@ Crea un nuevo cliente. El cliente debe ser mayor de 18 años. El número de iden
 {
   "id": 1,
   "tipoIdentificacion": "CC",
-  "numeroIdentificacion": "1234567890",
-  "nombres": "Juan",
-  "apellidos": "Pérez",
-  "email": "juan.perez@email.com",
-  "fechaNacimiento": "1990-05-15",
-  "fechaCreacion": "2026-06-01T10:00:00"
+  "numeroIdentificacion": "1099887766",
+  "nombres": "Laura",
+  "apellidos": "Gómez",
+  "email": "laura.gomez@email.com",
+  "fechaNacimiento": "1990-03-15",
+  "fechaCreacion": "2026-06-01T10:00:00",
+  "fechaModificacion": "2026-06-01T10:00:00"
 }
 ```
 
+#### PUT /api/clientes/{id} — Actualizar cliente
+
+Mismo body que el POST. La `fechaModificacion` se recalcula automáticamente.
+
+**Response `200 OK`:** cliente con datos actualizados.
+
+#### DELETE /api/clientes/{id} — Eliminar cliente
+
+**Response `204 No Content`** si no tiene productos vinculados.
+**Response `400`** si el cliente tiene cuentas asociadas.
+
 ---
 
-### Productos (Cuentas) — `POST /api/productos`
+### Productos (Cuentas) — `/api/productos`
 
-Crea una cuenta bancaria vinculada a un cliente existente. El número de cuenta se genera automáticamente:
-- Cuenta de **ahorro**: prefijo `53` + 8 dígitos
-- Cuenta **corriente**: prefijo `33` + 8 dígitos
+| Método | Endpoint | Descripción |
+|---|---|---|
+| `POST` | `/api/productos` | Crear cuenta |
+| `GET` | `/api/productos/cliente/{clienteId}` | Listar cuentas de un cliente |
+| `PATCH` | `/api/productos/{id}/estado` | Activar o inactivar cuenta |
+| `POST` | `/api/productos/{id}/cancelar` | Cancelar cuenta |
 
-El saldo inicial es `0` y el estado inicial es `ACTIVA`.
+#### POST /api/productos — Crear cuenta
 
 **Request:**
 ```json
@@ -150,7 +179,7 @@ Valores válidos para `tipoCuenta`: `AHORRO`, `CORRIENTE`
 {
   "id": 1,
   "tipoCuenta": "AHORRO",
-  "numeroCuenta": "5300000001",
+  "numeroCuenta": "5312345678",
   "estado": "ACTIVA",
   "saldo": 0.00,
   "exentaGMF": false,
@@ -159,87 +188,86 @@ Valores válidos para `tipoCuenta`: `AHORRO`, `CORRIENTE`
 }
 ```
 
----
+#### GET /api/productos/cliente/{clienteId} — Listar cuentas del cliente
 
-### Transacciones
+**Response `200 OK`:** lista de todas las cuentas del cliente (activas, inactivas y canceladas).
 
-Todos los endpoints de transacciones requieren que la cuenta esté en estado `ACTIVA`.
-
-#### Depósito — `POST /api/transacciones/deposito`
-
-Incrementa el saldo de la cuenta indicada.
+#### PATCH /api/productos/{id}/estado — Cambiar estado
 
 **Request:**
 ```json
+{ "estado": "INACTIVA" }
+```
+
+Valores válidos: `ACTIVA`, `INACTIVA`. Para cancelar usar `/cancelar`.
+
+#### POST /api/productos/{id}/cancelar — Cancelar cuenta
+
+Solo permitido si el saldo es `$0`. **Response `200 OK`** con estado `CANCELADA`.
+
+---
+
+### Transacciones — `/api/transacciones`
+
+| Método | Endpoint | Descripción |
+|---|---|---|
+| `POST` | `/api/transacciones/deposito` | Consignación |
+| `POST` | `/api/transacciones/retiro` | Retiro |
+| `POST` | `/api/transacciones/transferencia` | Transferencia entre cuentas |
+| `GET` | `/api/transacciones/cuenta/{numeroCuenta}` | Historial de transacciones |
+
+#### POST /api/transacciones/deposito
+
+```json
 {
-  "numeroCuenta": "5300000001",
+  "numeroCuenta": "5312345678",
   "monto": 500000.00
 }
 ```
 
-**Response `201 Created`:**
+#### POST /api/transacciones/retiro
+
 ```json
 {
-  "id": 1,
-  "tipo": "DEPOSITO",
-  "monto": 500000.00,
-  "fecha": "2026-06-01T10:10:00",
-  "numeroCuentaOrigen": "5300000001",
-  "numeroCuentaDestino": null
-}
-```
-
----
-
-#### Retiro — `POST /api/transacciones/retiro`
-
-Disminuye el saldo de la cuenta. Requiere saldo suficiente.
-
-**Request:**
-```json
-{
-  "numeroCuenta": "5300000001",
+  "numeroCuenta": "5312345678",
   "monto": 100000.00
 }
 ```
 
-**Response `201 Created`:**
+#### POST /api/transacciones/transferencia
+
 ```json
 {
-  "id": 2,
-  "tipo": "RETIRO",
-  "monto": 100000.00,
-  "fecha": "2026-06-01T10:15:00",
-  "numeroCuentaOrigen": "5300000001",
-  "numeroCuentaDestino": null
-}
-```
-
----
-
-#### Transferencia — `POST /api/transacciones/transferencia`
-
-Mueve fondos entre dos cuentas distintas. Ambas deben estar activas y la cuenta origen debe tener saldo suficiente.
-
-**Request:**
-```json
-{
-  "cuentaOrigen": "5300000001",
-  "cuentaDestino": "3300000002",
+  "cuentaOrigen": "5312345678",
+  "cuentaDestino": "3387654321",
   "monto": 50000.00
 }
 ```
 
-**Response `201 Created`:**
+#### GET /api/transacciones/cuenta/{numeroCuenta} — Historial
+
+Retorna todas las transacciones donde la cuenta participó (como origen o destino), ordenadas de más reciente a más antigua.
+
+**Response `200 OK`:**
 ```json
-{
-  "id": 3,
-  "tipo": "TRANSFERENCIA",
-  "monto": 50000.00,
-  "fecha": "2026-06-01T10:20:00",
-  "numeroCuentaOrigen": "5300000001",
-  "numeroCuentaDestino": "3300000002"
-}
+[
+  {
+    "id": 3,
+    "tipo": "TRANSFERENCIA",
+    "monto": 50000.00,
+    "fecha": "2026-06-01T10:20:00",
+    "numeroCuentaOrigen": "5312345678",
+    "numeroCuentaDestino": "3387654321"
+  },
+  {
+    "id": 1,
+    "tipo": "DEPOSITO",
+    "monto": 500000.00,
+    "fecha": "2026-06-01T10:10:00",
+    "numeroCuentaOrigen": "5312345678",
+    "numeroCuentaDestino": null
+  }
+]
 ```
 
 ---
@@ -250,57 +278,85 @@ Mueve fondos entre dos cuentas distintas. Ambas deben estar activas y la cuenta 
 |---|---|
 | Cliente | Debe ser mayor de 18 años |
 | Cliente | Número de identificación único |
-| Cliente | Email único |
-| Producto | Número de cuenta generado automáticamente |
-| Producto | Saldo inicial = 0 |
-| Producto | Estado inicial = ACTIVA |
-| Transacción | La cuenta debe estar ACTIVA |
+| Cliente | Email único y con formato válido |
+| Cliente | Nombre y apellido mínimo 2 caracteres |
+| Cliente | No se puede eliminar si tiene productos vinculados |
+| Producto | Número de cuenta generado automáticamente (10 dígitos) |
+| Producto | Cuenta ahorro inicia con prefijo `53`, corriente con `33` |
+| Producto | Saldo inicial = $0, estado inicial = ACTIVA |
+| Producto | Solo se cancela si el saldo es $0 |
+| Producto | No se puede cambiar estado de una cuenta cancelada |
+| Transacción | La cuenta debe estar ACTIVA para operar |
 | Retiro | El saldo no puede quedar negativo |
-| Transferencia | Origen y destino no pueden ser la misma cuenta |
-| Transferencia | Ambas cuentas deben estar ACTIVAS |
+| Transferencia | Origen y destino deben ser cuentas distintas y activas |
 
 ---
 
 ## Manejo de errores
 
-Todos los errores retornan JSON estructurado con el siguiente formato:
-
+**Error de negocio:**
 ```json
 {
-  "mensaje": "Descripción del error",
+  "mensaje": "No se puede eliminar el cliente porque tiene productos vinculados",
   "codigo": 400
 }
 ```
 
-Para errores de validación de campos:
-
+**Error de validación:**
 ```json
 {
   "mensaje": "Error de validación en los campos enviados",
   "codigo": 400,
   "errores": {
-    "monto": "El monto debe ser mayor a cero",
-    "numeroCuenta": "El número de cuenta es obligatorio"
+    "email": "El formato del email no es válido",
+    "nombres": "Los nombres deben tener entre 2 y 100 caracteres"
   }
 }
 ```
 
 | Escenario | HTTP |
 |---|---|
-| Error de negocio (saldo insuficiente, cuenta inactiva, etc.) | `400` |
+| Regla de negocio violada | `400` |
 | Campos inválidos o faltantes | `400` |
 | Error interno del servidor | `500` |
 
 ---
 
-## Flujo de prueba sugerido en Postman
+## Tests unitarios
+
+```bash
+./mvnw test
+```
+
+| Suite | Capa | Tests |
+|---|---|---|
+| `TransaccionServiceTest` | Service | 3 |
+| `ClienteControllerTest` | Controller | 5 |
+| `ProductoControllerTest` | Controller | 4 |
+| `TransaccionControllerTest` | Controller | 3 |
+
+**Total: 16 tests — cobertura en capas Service y Controller.**
+
+---
+
+## Colección Postman
+
+El archivo `MiniBanco.postman_collection.json` en la raíz del proyecto contiene 27 requests listos para importar, cubriendo todos los escenarios exitosos y de error.
+
+**Importar:** Postman → Import → seleccionar el archivo.
+
+---
+
+## Flujo de prueba sugerido
 
 1. `POST /api/clientes` — crear cliente
-2. `POST /api/productos` — crear cuenta de ahorro con el `id` del cliente
-3. `POST /api/productos` — crear segunda cuenta (corriente) para probar transferencias
-4. `POST /api/transacciones/deposito` — depositar en la primera cuenta
-5. `POST /api/transacciones/retiro` — retirar de la primera cuenta
-6. `POST /api/transacciones/transferencia` — transferir entre las dos cuentas
+2. `POST /api/productos` — crear cuenta ahorro
+3. `POST /api/productos` — crear cuenta corriente
+4. `POST /api/transacciones/deposito` — depositar en cuenta ahorro
+5. `POST /api/transacciones/retiro` — retirar de cuenta ahorro
+6. `POST /api/transacciones/transferencia` — transferir entre cuentas
+7. `GET /api/transacciones/cuenta/{numeroCuenta}` — ver historial
+8. `GET /api/productos/cliente/{id}` — ver estado de todas las cuentas
 
 ---
 

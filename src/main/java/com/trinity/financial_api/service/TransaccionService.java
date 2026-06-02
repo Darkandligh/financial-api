@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Service
 public class TransaccionService {
@@ -22,6 +23,12 @@ public class TransaccionService {
                                ProductoRepository productoRepository) {
         this.transaccionRepository = transaccionRepository;
         this.productoRepository = productoRepository;
+    }
+
+    public List<Transaccion> listarPorCuenta(String numeroCuenta) {
+        productoRepository.findByNumeroCuenta(numeroCuenta)
+            .orElseThrow(() -> new BusinessException("No existe una cuenta con número: " + numeroCuenta));
+        return transaccionRepository.findByCuentaNumero(numeroCuenta);
     }
 
     @Transactional

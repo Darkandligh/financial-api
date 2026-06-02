@@ -15,4 +15,6 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
     boolean existsByNumeroCuenta(String numeroCuenta);
 
     Optional<Producto> findByNumeroCuenta(String numeroCuenta);
+
+    boolean existsByClienteId(Long clienteId);
 }

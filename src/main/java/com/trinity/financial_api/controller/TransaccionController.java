@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/transacciones")
 public class TransaccionController {
@@ -17,6 +19,15 @@ public class TransaccionController {
 
     public TransaccionController(TransaccionService transaccionService) {
         this.transaccionService = transaccionService;
+    }
+
+    @GetMapping("/cuenta/{numeroCuenta}")
+    public ResponseEntity<List<TransaccionResponse>> listarPorCuenta(@PathVariable String numeroCuenta) {
+        List<TransaccionResponse> transacciones = transaccionService.listarPorCuenta(numeroCuenta)
+            .stream()
+            .map(TransaccionResponse::from)
+            .toList();
+        return ResponseEntity.ok(transacciones);
     }
 
     @PostMapping("/deposito")
