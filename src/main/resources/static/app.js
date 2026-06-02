@@ -5,11 +5,12 @@
 // ══════════════════════════════════════════════
 const API = 'http://localhost:8080';
 
-let _historialData       = [];
-let _modalResolve        = null;
-let _cuentasClienteId    = null;
-let _cuentasCliente      = null;
+let _historialData        = [];
+let _modalResolve         = null;
+let _cuentasClienteId     = null;
+let _cuentasCliente       = null;
 let _crearCuentaClienteId = null;
+let _clienteActual        = null;
 
 // ══════════════════════════════════════════════
 // NAVIGATION
@@ -204,6 +205,7 @@ async function buscarCliente() {
   try {
     const c = await apiFetch('GET', `/api/clientes/identificacion/${encodeURIComponent(numId)}`);
     const cuentas = await apiFetch('GET', `/api/productos/cliente/${c.id}`).catch(() => []);
+    _clienteActual = c;
     area.innerHTML = renderClienteCard(c, cuentas);
   } catch (err) {
     area.innerHTML = `<p style="color:var(--danger);font-size:13px;margin-top:4px">⚠ ${err.message}</p>`;
@@ -250,6 +252,7 @@ function renderClienteCard(c, cuentas = []) {
       </div>
       ${cuentasBlock}
       <div class="result-actions" style="margin-top:10px">
+        <button class="btn btn-secondary btn-sm" onclick="editarCliente(${c.id})">Editar</button>
         <button class="btn btn-danger btn-sm" onclick="eliminarCliente(${c.id})">Eliminar cliente</button>
       </div>
     </div>`;
@@ -280,6 +283,87 @@ async function eliminarCliente(id) {
     document.getElementById('c-buscar-id').value = '';
   } catch (err) {
     toast('No se pudo eliminar', err.message, 'error');
+  }
+}
+
+function editarCliente(id) {
+  const c = _clienteActual;
+  const opts = (val) => ['CC','CE','NIT','PP'].map(v =>
+    `<option value="${v}"${c.tipoIdentificacion === v ? ' selected' : ''}>${
+      {CC:'Cédula de Ciudadanía', CE:'Cédula de Extranjería', NIT:'NIT', PP:'Pasaporte'}[v]
+    }</option>`
+  ).join('');
+  document.getElementById('result-cliente').innerHTML = `
+    <div class="result-cliente-card">
+      <div class="result-header">
+        <div>
+          <div class="result-name">Editar Cliente</div>
+          <div class="result-id">ID #${c.id}</div>
+        </div>
+      </div>
+      <form id="form-editar-cliente" autocomplete="off">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Tipo de Identificación</label>
+            <select class="form-input" id="e-tipoId" required>${opts()}</select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Número de Identificación</label>
+            <input type="text" class="form-input" id="e-numId" value="${c.numeroIdentificacion}" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nombres</label>
+            <input type="text" class="form-input" id="e-nombres" value="${c.nombres}" required minlength="2" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Apellidos</label>
+            <input type="text" class="form-input" id="e-apellidos" value="${c.apellidos}" required minlength="2" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Correo Electrónico</label>
+          <input type="email" class="form-input" id="e-email" value="${c.email}" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha de Nacimiento</label>
+          <input type="date" class="form-input" id="e-fechaNac" value="${c.fechaNacimiento}" required />
+        </div>
+        <div class="result-actions" style="margin-top:10px">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="buscarCliente()">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-actualizar-cliente">
+            <span>Guardar Cambios</span>
+            <div class="btn-spinner hidden"></div>
+          </button>
+        </div>
+      </form>
+    </div>`;
+  document.getElementById('form-editar-cliente').addEventListener('submit', (e) => actualizarCliente(id, e));
+}
+
+async function actualizarCliente(id, e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn-actualizar-cliente');
+  const span = btn.querySelector('span');
+  const spinner = btn.querySelector('.btn-spinner');
+  btn.disabled = true; span.classList.add('hidden'); spinner.classList.remove('hidden');
+  try {
+    const data = await apiFetch('PUT', `/api/clientes/${id}`, {
+      tipoIdentificacion:  document.getElementById('e-tipoId').value,
+      numeroIdentificacion: document.getElementById('e-numId').value.trim(),
+      nombres:             document.getElementById('e-nombres').value.trim(),
+      apellidos:           document.getElementById('e-apellidos').value.trim(),
+      email:               document.getElementById('e-email').value.trim(),
+      fechaNacimiento:     document.getElementById('e-fechaNac').value,
+    });
+    _clienteActual = data;
+    toast('Cliente actualizado', `${data.nombres} ${data.apellidos}`);
+    const cuentas = await apiFetch('GET', `/api/productos/cliente/${data.id}`).catch(() => []);
+    document.getElementById('result-cliente').innerHTML = renderClienteCard(data, cuentas);
+  } catch (err) {
+    toast('Error al actualizar', err.message, 'error');
+    btn.disabled = false; span.classList.remove('hidden'); spinner.classList.add('hidden');
   }
 }
 
