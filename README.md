@@ -63,7 +63,8 @@ Documentación Swagger UI: `http://localhost:8080/swagger-ui/index.html`
 ```
 src/main/java/com/trinity/financial_api/
 ├── config/
-│   └── OpenApiConfig.java
+│   ├── OpenApiConfig.java
+│   └── CorsConfig.java
 ├── controller/
 │   ├── ClienteController.java
 │   ├── ProductoController.java
@@ -357,6 +358,38 @@ El archivo `MiniBanco.postman_collection.json` en la raíz del proyecto contiene
 6. `POST /api/transacciones/transferencia` — transferir entre cuentas
 7. `GET /api/transacciones/cuenta/{numeroCuenta}` — ver historial
 8. `GET /api/productos/cliente/{id}` — ver estado de todas las cuentas
+
+---
+
+## Frontend
+
+El proyecto incluye un dashboard web en `frontend/` que se conecta directamente a la API. No requiere Node.js, npm ni ningún build tool.
+
+### Archivos
+
+| Archivo | Descripción |
+|---|---|
+| `frontend/index.html` | Estructura HTML con sidebar y 5 secciones |
+| `frontend/styles.css` | Diseño dark fintech con glassmorphism y animaciones |
+| `frontend/app.js` | Lógica completa: fetch, toasts, estados de carga |
+
+### Cómo usarlo
+
+1. Levanta el backend: `./mvnw spring-boot:run`
+2. Abre `frontend/index.html` directamente en el navegador
+3. El indicador de estado en el sidebar confirma la conexión con la API
+
+### Secciones del dashboard
+
+| Sección | Funcionalidad |
+|---|---|
+| **Dashboard** | Panel de bienvenida con accesos rápidos |
+| **Clientes** | Crear cliente, buscar por ID, eliminar |
+| **Cuentas** | Crear cuenta, listar por cliente, activar / inactivar / cancelar |
+| **Operaciones** | Depósito, retiro y transferencia con resultado visual |
+| **Historial** | Tabla de movimientos por número de cuenta |
+
+> El backend tiene CORS habilitado para permitir peticiones desde el navegador (`CorsConfig.java`).
 
 ---
 
