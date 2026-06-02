@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MiniBanco — Panel Financiero</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="app-layout">
+
+  <!-- ═══════════ SIDEBAR ═══════════ -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon-wrap"><span class="brand-icon">M</span></div>
+      <div>
+        <div class="brand-name">MiniBanco</div>
+        <div class="brand-tagline">Panel Financiero</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a class="nav-item active" data-section="dashboard" onclick="showSection('dashboard')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span>Dashboard</span>
+      </a>
+      <a class="nav-item" data-section="clientes" onclick="showSection('clientes')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Clientes</span>
+      </a>
+      <a class="nav-item" data-section="cuentas" onclick="showSection('cuentas')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        <span>Cuentas</span>
+      </a>
+      <a class="nav-item" data-section="operaciones" onclick="showSection('operaciones')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <span>Operaciones</span>
+      </a>
+      <a class="nav-item" data-section="historial" onclick="showSection('historial')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <span>Historial</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="api-status-pill" id="api-status-pill">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-text">Conectando...</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══════════ MAIN ═══════════ -->
+  <main class="main-content">
+    <header class="topbar">
+      <div>
+        <h1 class="page-title" id="page-title">Dashboard</h1>
+        <p class="page-sub" id="page-sub">Bienvenido al sistema bancario</p>
+      </div>
+      <div class="topbar-date" id="topbar-date"></div>
+    </header>
+
+    <div class="content-area">
+
+      <!-- ── DASHBOARD ── -->
+      <section id="section-dashboard" class="section active">
+        <div class="hero-banner">
+          <div class="hero-text">
+            <div class="hero-badge">
+              <span class="badge-dot"></span>Sistema operativo
+            </div>
+            <h2 class="hero-title">Gestión Financiera<br><span class="gradient-text">Inteligente</span></h2>
+            <p class="hero-desc">Administra clientes, cuentas y transacciones desde un solo lugar.</p>
+          </div>
+          <div class="hero-card-wrap">
+            <div class="hero-bank-card">
+              <div class="card-top-row">
+                <div class="card-chip">
+                  <div class="chip-line"></div><div class="chip-line"></div><div class="chip-line"></div>
+                </div>
+                <div class="card-brand">MB</div>
+              </div>
+              <div class="card-number">5372 •••• •••• 8421</div>
+              <div class="card-bottom-row">
+                <div><div class="card-label">TITULAR</div><div class="card-value">MINIBANCO</div></div>
+                <div><div class="card-label">VENCE</div><div class="card-value">12/28</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="quick-grid">
+          <div class="quick-card" onclick="showSection('clientes')">
+            <div class="quick-icon qc-blue">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+            </div>
+            <div class="quick-label">Nuevo Cliente</div>
+            <div class="quick-desc">Registrar en el sistema</div>
+            <div class="quick-arrow">→</div>
+          </div>
+          <div class="quick-card" onclick="showSection('cuentas')">
+            <div class="quick-icon qc-purple">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/><line x1="7" y1="15" x2="7" y2="15" stroke-width="3"/><line x1="11" y1="15" x2="13" y2="15" stroke-width="3"/></svg>
+            </div>
+            <div class="quick-label">Nueva Cuenta</div>
+            <div class="quick-desc">Ahorro o corriente</div>
+            <div class="quick-arrow">→</div>
+          </div>
+          <div class="quick-card" onclick="showSection('operaciones')">
+            <div class="quick-icon qc-green">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <div class="quick-label">Transacción</div>
+            <div class="quick-desc">Depositar, retirar, transferir</div>
+            <div class="quick-arrow">→</div>
+          </div>
+          <div class="quick-card" onclick="showSection('historial')">
+            <div class="quick-icon qc-orange">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <div class="quick-label">Historial</div>
+            <div class="quick-desc">Movimientos por cuenta</div>
+            <div class="quick-arrow">→</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── CLIENTES ── -->
+      <section id="section-clientes" class="section">
+        <div class="two-col">
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Registrar Cliente</h3>
+              <p class="card-subtitle">Completa los datos del nuevo cliente</p>
+            </div>
+            <form id="form-cliente" autocomplete="off">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Tipo de Identificación</label>
+                  <select class="form-input" id="c-tipoId" required>
+                    <option value="">Seleccionar...</option>
+                    <option value="CC">Cédula de Ciudadanía</option>
+                    <option value="CE">Cédula de Extranjería</option>
+                    <option value="NIT">NIT</option>
+                    <option value="PP">Pasaporte</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Número de Identificación</label>
+                  <input type="text" class="form-input" id="c-numId" placeholder="Ej: 1099887766" required />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Nombres</label>
+                  <input type="text" class="form-input" id="c-nombres" placeholder="Nombre(s)" required minlength="2" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Apellidos</label>
+                  <input type="text" class="form-input" id="c-apellidos" placeholder="Apellido(s)" required minlength="2" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Correo Electrónico</label>
+                <input type="email" class="form-input" id="c-email" placeholder="correo@ejemplo.com" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Fecha de Nacimiento</label>
+                <input type="date" class="form-input" id="c-fechaNac" required />
+              </div>
+              <button type="submit" class="btn btn-primary btn-full" id="btn-crear-cliente">
+                <span>Registrar Cliente</span>
+                <div class="btn-spinner hidden"></div>
+              </button>
+            </form>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Consultar Cliente</h3>
+              <p class="card-subtitle">Busca por ID para ver y gestionar</p>
+            </div>
+            <div class="search-bar">
+              <input type="number" class="form-input" id="c-buscar-id" placeholder="ID del cliente (ej: 1)" />
+              <button class="btn btn-secondary" onclick="buscarCliente()">Buscar</button>
+            </div>
+            <div id="result-cliente" class="result-area"></div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ── CUENTAS ── -->
+      <section id="section-cuentas" class="section">
+        <div class="two-col">
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Crear Cuenta</h3>
+              <p class="card-subtitle">Asocia una cuenta a un cliente existente</p>
+            </div>
+            <form id="form-cuenta" autocomplete="off">
+              <div class="form-group">
+                <label class="form-label">ID del Cliente</label>
+                <input type="number" class="form-input" id="cu-clienteId" placeholder="Ej: 1" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Tipo de Cuenta</label>
+                <div class="toggle-group">
+                  <label class="toggle-option">
+                    <input type="radio" name="tipoCuenta" value="AHORRO" checked />
+                    <span class="toggle-label">
+                      <span class="toggle-icon">💰</span> Ahorros
+                    </span>
+                  </label>
+                  <label class="toggle-option">
+                    <input type="radio" name="tipoCuenta" value="CORRIENTE" />
+                    <span class="toggle-label">
+                      <span class="toggle-icon">🏦</span> Corriente
+                    </span>
+                  </label>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="checkbox-row">
+                  <input type="checkbox" id="cu-gmf" />
+                  <span class="checkbox-custom"></span>
+                  <span class="checkbox-text">Exenta de GMF (4x1000)</span>
+                </label>
+              </div>
+              <button type="submit" class="btn btn-primary btn-full" id="btn-crear-cuenta">
+                <span>Crear Cuenta</span>
+                <div class="btn-spinner hidden"></div>
+              </button>
+            </form>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Cuentas del Cliente</h3>
+              <p class="card-subtitle">Consulta, activa, inactiva o cancela</p>
+            </div>
+            <div class="search-bar">
+              <input type="number" class="form-input" id="cu-buscar-id" placeholder="ID del cliente" />
+              <button class="btn btn-secondary" onclick="listarCuentas()">Ver Cuentas</button>
+            </div>
+            <div id="result-cuentas" class="result-area"></div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ── OPERACIONES ── -->
+      <section id="section-operaciones" class="section">
+        <div class="ops-tabs">
+          <button class="ops-tab active" id="tab-deposito" onclick="showOpTab('deposito')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+            Depósito
+          </button>
+          <button class="ops-tab" id="tab-retiro" onclick="showOpTab('retiro')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+            Retiro
+          </button>
+          <button class="ops-tab" id="tab-transferencia" onclick="showOpTab('transferencia')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16V4m0 0L3 8m4-4 4 4M17 8v12m0 0 4-4m-4 4-4-4"/></svg>
+            Transferencia
+          </button>
+        </div>
+
+        <div class="ops-content">
+          <div id="op-deposito" class="op-panel active">
+            <div class="card ops-card">
+              <div class="ops-icon-wrap ops-green">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+              </div>
+              <h3 class="ops-title">Consignación</h3>
+              <p class="ops-desc">Ingresa fondos a una cuenta activa</p>
+              <form id="form-deposito">
+                <div class="form-group">
+                  <label class="form-label">Número de Cuenta</label>
+                  <input type="text" class="form-input" id="d-cuenta" placeholder="Ej: 5312345678" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Monto a Depositar</label>
+                  <div class="input-prefix-wrap">
+                    <span class="input-prefix">$</span>
+                    <input type="number" class="form-input input-with-prefix" id="d-monto" placeholder="0.00" min="0.01" step="0.01" required />
+                  </div>
+                </div>
+                <button type="submit" class="btn btn-success btn-full" id="btn-deposito">
+                  <span>Confirmar Depósito</span>
+                  <div class="btn-spinner hidden"></div>
+                </button>
+              </form>
+              <div id="result-deposito" class="result-area"></div>
+            </div>
+          </div>
+
+          <div id="op-retiro" class="op-panel">
+            <div class="card ops-card">
+              <div class="ops-icon-wrap ops-red">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+              </div>
+              <h3 class="ops-title">Retiro</h3>
+              <p class="ops-desc">Extrae fondos de una cuenta activa</p>
+              <form id="form-retiro">
+                <div class="form-group">
+                  <label class="form-label">Número de Cuenta</label>
+                  <input type="text" class="form-input" id="r-cuenta" placeholder="Ej: 5312345678" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Monto a Retirar</label>
+                  <div class="input-prefix-wrap">
+                    <span class="input-prefix">$</span>
+                    <input type="number" class="form-input input-with-prefix" id="r-monto" placeholder="0.00" min="0.01" step="0.01" required />
+                  </div>
+                </div>
+                <button type="submit" class="btn btn-danger btn-full" id="btn-retiro">
+                  <span>Confirmar Retiro</span>
+                  <div class="btn-spinner hidden"></div>
+                </button>
+              </form>
+              <div id="result-retiro" class="result-area"></div>
+            </div>
+          </div>
+
+          <div id="op-transferencia" class="op-panel">
+            <div class="card ops-card">
+              <div class="ops-icon-wrap ops-blue">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16V4m0 0L3 8m4-4 4 4M17 8v12m0 0 4-4m-4 4-4-4"/></svg>
+              </div>
+              <h3 class="ops-title">Transferencia</h3>
+              <p class="ops-desc">Mueve fondos entre dos cuentas</p>
+              <form id="form-transferencia">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">Cuenta Origen</label>
+                    <input type="text" class="form-input" id="t-origen" placeholder="Ej: 5312345678" required />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Cuenta Destino</label>
+                    <input type="text" class="form-input" id="t-destino" placeholder="Ej: 3387654321" required />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Monto a Transferir</label>
+                  <div class="input-prefix-wrap">
+                    <span class="input-prefix">$</span>
+                    <input type="number" class="form-input input-with-prefix" id="t-monto" placeholder="0.00" min="0.01" step="0.01" required />
+                  </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full" id="btn-transferencia">
+                  <span>Confirmar Transferencia</span>
+                  <div class="btn-spinner hidden"></div>
+                </button>
+              </form>
+              <div id="result-transferencia" class="result-area"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── HISTORIAL ── -->
+      <section id="section-historial" class="section">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Historial de Transacciones</h3>
+            <p class="card-subtitle">Consulta todos los movimientos de una cuenta</p>
+          </div>
+          <div class="search-bar">
+            <input type="text" class="form-input" id="h-cuenta" placeholder="Número de cuenta (ej: 5312345678)" />
+            <button class="btn btn-primary" onclick="buscarHistorial()">Consultar</button>
+          </div>
+          <div id="result-historial" class="result-area"></div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- ═══════════ TOASTS ═══════════ -->
+<div class="toast-container" id="toast-container"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
