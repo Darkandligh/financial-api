@@ -332,12 +332,15 @@ Retorna todas las transacciones donde la cuenta participó (como origen o destin
 
 | Suite | Capa | Tests |
 |---|---|---|
+| `ClienteServiceTest` | Service | 9 |
+| `ProductoServiceTest` | Service | 9 |
 | `TransaccionServiceTest` | Service | 3 |
 | `ClienteControllerTest` | Controller | 5 |
 | `ProductoControllerTest` | Controller | 4 |
 | `TransaccionControllerTest` | Controller | 3 |
+| `FinancialApiApplicationTests` | Contexto Spring | 1 |
 
-**Total: 16 tests — cobertura en capas Service y Controller.**
+**Total: 34 tests — cobertura en capas Service y Controller.**
 
 ---
 
