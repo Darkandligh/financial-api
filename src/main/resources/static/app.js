@@ -11,16 +11,18 @@ let _cuentasClienteId     = null;
 let _cuentasCliente       = null;
 let _crearCuentaClienteId = null;
 let _clienteActual        = null;
+let _todosClientesData    = [];
 
 // ══════════════════════════════════════════════
 // NAVIGATION
 // ══════════════════════════════════════════════
 const sectionMeta = {
-  dashboard:   { title: 'Dashboard',    sub: 'Bienvenido al sistema bancario' },
-  clientes:    { title: 'Clientes',     sub: 'Registro y consulta de clientes' },
-  cuentas:     { title: 'Cuentas',      sub: 'Gestión de productos financieros' },
-  operaciones: { title: 'Operaciones',  sub: 'Depósitos, retiros y transferencias' },
-  historial:   { title: 'Historial',    sub: 'Movimientos de cuentas' },
+  dashboard:        { title: 'Dashboard',           sub: 'Bienvenido al sistema bancario' },
+  clientes:         { title: 'Clientes',            sub: 'Registro y consulta de clientes' },
+  'todos-clientes': { title: 'Todos los Clientes',  sub: 'Listado completo de clientes registrados' },
+  cuentas:          { title: 'Cuentas',             sub: 'Gestión de productos financieros' },
+  operaciones:      { title: 'Operaciones',         sub: 'Depósitos, retiros y transferencias' },
+  historial:        { title: 'Historial',           sub: 'Movimientos de cuentas' },
 };
 
 function showSection(name) {
@@ -33,6 +35,8 @@ function showSection(name) {
   const meta = sectionMeta[name];
   document.getElementById('page-title').textContent = meta.title;
   document.getElementById('page-sub').textContent = meta.sub;
+
+  if (name === 'todos-clientes') listarTodosClientes();
 }
 
 // ══════════════════════════════════════════════
@@ -169,7 +173,10 @@ function badgeEstado(estado) {
 }
 
 function badgeTx(tipo) {
-  const map = { DEPOSITO: 'deposito', RETIRO: 'retiro', TRANSFERENCIA: 'transferencia' };
+  const map = {
+    DEPOSITO: 'deposito', RETIRO: 'retiro', TRANSFERENCIA: 'transferencia',
+    DEBITO: 'retiro', CREDITO: 'deposito',
+  };
   return `<span class="badge badge-${map[tipo] || 'deposito'}">${tipo}</span>`;
 }
 
@@ -377,6 +384,84 @@ async function verCuentasDeCliente(id) {
     document.getElementById('cu-buscar-id').value = _cuentasCliente.numeroIdentificacion;
   }
   await _refreshCuentas(area);
+}
+
+// ══════════════════════════════════════════════
+// TODOS LOS CLIENTES
+// ══════════════════════════════════════════════
+async function listarTodosClientes() {
+  const area = document.getElementById('result-todos-clientes');
+  area.innerHTML = '<p style="color:var(--text-3);font-size:13px;padding-top:12px">Cargando clientes...</p>';
+  try {
+    const list = await apiFetch('GET', '/api/clientes');
+    _todosClientesData = list;
+    filtrarClientes();
+  } catch (err) {
+    area.innerHTML = `<p style="color:var(--danger);font-size:13px;padding-top:12px">⚠ ${err.message}</p>`;
+  }
+}
+
+function filtrarClientes() {
+  const q = document.getElementById('tc-filtro').value.trim().toLowerCase();
+  const filtered = q
+    ? _todosClientesData.filter(c =>
+        `${c.nombres} ${c.apellidos}`.toLowerCase().includes(q) ||
+        c.numeroIdentificacion.toLowerCase().includes(q) ||
+        c.email.toLowerCase().includes(q)
+      )
+    : _todosClientesData;
+  renderTablaClientes(filtered);
+}
+
+function renderTablaClientes(list) {
+  const area = document.getElementById('result-todos-clientes');
+  if (!list.length) {
+    const msg = _todosClientesData.length
+      ? 'No hay clientes que coincidan con el filtro.'
+      : 'No hay clientes registrados en el sistema.';
+    area.innerHTML = `<div class="empty-state"><div class="empty-icon">👥</div><p>${msg}</p></div>`;
+    return;
+  }
+  const rows = list.map(c => `
+    <tr>
+      <td style="color:var(--text-3);font-size:12px">#${c.id}</td>
+      <td><strong>${c.nombres} ${c.apellidos}</strong></td>
+      <td>
+        <span style="font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px">${c.tipoIdentificacion}</span>
+        <span style="font-family:monospace"> ${c.numeroIdentificacion}</span>
+      </td>
+      <td style="color:var(--text-2)">${c.email}</td>
+      <td style="color:var(--text-2);font-size:12px">${formatDate(c.fechaCreacion)}</td>
+      <td>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-secondary btn-sm" onclick="verCuentasDeCliente(${c.id})">Cuentas</button>
+          <button class="btn btn-danger btn-sm" onclick="eliminarClienteDesdeTabla(${c.id}, '${c.nombres} ${c.apellidos}')">Eliminar</button>
+        </div>
+      </td>
+    </tr>`).join('');
+
+  area.innerHTML = `
+    <div style="margin-bottom:10px;font-size:12px;color:var(--text-3)">
+      ${list.length} cliente${list.length !== 1 ? 's' : ''} encontrado${list.length !== 1 ? 's' : ''}
+    </div>
+    <table class="history-table">
+      <thead>
+        <tr><th>#</th><th>Nombre</th><th>Identificación</th><th>Email</th><th>Registro</th><th>Acciones</th></tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+async function eliminarClienteDesdeTabla(id, nombre) {
+  const ok = await confirmModal(`¿Eliminar a ${nombre}?`, 'Esta acción es permanente y no se puede deshacer.', 'Eliminar');
+  if (!ok) return;
+  try {
+    await apiFetch('DELETE', `/api/clientes/${id}`);
+    toast('Cliente eliminado', `${nombre} eliminado correctamente`);
+    listarTodosClientes();
+  } catch (err) {
+    toast('No se pudo eliminar', err.message, 'error');
+  }
 }
 
 // ══════════════════════════════════════════════

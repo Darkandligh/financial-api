@@ -81,8 +81,15 @@ public class TransaccionService {
         productoRepository.save(origen);
         productoRepository.save(destino);
 
+        transaccionRepository.save(Transaccion.builder()
+            .tipoTransaccion(TipoTransaccion.DEBITO)
+            .monto(monto)
+            .cuentaOrigen(origen)
+            .cuentaDestino(destino)
+            .build());
+
         return transaccionRepository.save(Transaccion.builder()
-            .tipoTransaccion(TipoTransaccion.TRANSFERENCIA)
+            .tipoTransaccion(TipoTransaccion.CREDITO)
             .monto(monto)
             .cuentaOrigen(origen)
             .cuentaDestino(destino)

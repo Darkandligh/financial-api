@@ -6,6 +6,7 @@
   <title>MiniBanco — Panel Financiero</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -31,6 +32,13 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         <span>Clientes</span>
       </a>
+      <!-- ═══ DESCOMENTAR CUANDO SE IMPLEMENTE GET /api/clientes ═══
+      <a class="nav-item" data-section="todos-clientes" onclick="showSection('todos-clientes')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        <span>Todos los Clientes</span>
+      </a>
+      ═══════════════════════════════════════════════════════════ -->
+
       <a class="nav-item" data-section="cuentas" onclick="showSection('cuentas')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
         <span>Cuentas</span>
@@ -365,6 +373,26 @@
               <div id="result-transferencia" class="result-area"></div>
             </div>
           </div>
+        </div>
+      </section>
+
+      <!-- ── TODOS LOS CLIENTES ── -->
+      <section id="section-todos-clientes" class="section">
+        <div class="card">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+            <div>
+              <h3 class="card-title">Todos los Clientes</h3>
+              <p class="card-subtitle">Listado completo de clientes registrados en el sistema</p>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="listarTodosClientes()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Refrescar
+            </button>
+          </div>
+          <div class="search-bar" style="margin-bottom:4px">
+            <input type="text" class="form-input" id="tc-filtro" placeholder="Filtrar por nombre, identificación o email..." oninput="filtrarClientes()" />
+          </div>
+          <div id="result-todos-clientes" class="result-area"></div>
         </div>
       </section>
 
