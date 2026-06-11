@@ -97,4 +97,35 @@ class TransaccionServiceTest {
 
         verify(productoRepository, never()).findByNumeroCuenta(any());
     }
+
+    @Test
+    void transferir_debeGenerarDosMovimientos_cuandoDatosValidos() {
+        Producto cuentaDestino = Producto.builder()
+            .id(2L)
+            .numeroCuenta("3300000002")
+            .tipoCuenta(TipoCuenta.CORRIENTE)
+            .estado(EstadoCuenta.ACTIVA)
+            .saldo(new BigDecimal("100000.00"))
+            .cliente(Cliente.builder().id(1L).build())
+            .build();
+
+        when(productoRepository.findByNumeroCuenta("5300000001")).thenReturn(Optional.of(cuentaActiva));
+        when(productoRepository.findByNumeroCuenta("3300000002")).thenReturn(Optional.of(cuentaDestino));
+
+        Transaccion debito = Transaccion.builder().id(1L).tipoTransaccion(TipoTransaccion.DEBITO)
+            .monto(new BigDecimal("100000.00")).cuentaOrigen(cuentaActiva).cuentaDestino(cuentaDestino).build();
+        Transaccion credito = Transaccion.builder().id(2L).tipoTransaccion(TipoTransaccion.CREDITO)
+            .monto(new BigDecimal("100000.00")).cuentaOrigen(cuentaActiva).cuentaDestino(cuentaDestino).build();
+
+        when(transaccionRepository.save(any()))
+            .thenReturn(debito)
+            .thenReturn(credito);
+
+        Transaccion resultado = transaccionService.transferir("5300000001", "3300000002", new BigDecimal("100000.00"));
+
+        assertThat(cuentaActiva.getSaldo()).isEqualByComparingTo("200000.00");
+        assertThat(cuentaDestino.getSaldo()).isEqualByComparingTo("200000.00");
+        assertThat(resultado.getTipoTransaccion()).isEqualTo(TipoTransaccion.CREDITO);
+        verify(transaccionRepository, times(2)).save(any());
+    }
 }
