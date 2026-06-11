@@ -52,4 +52,6 @@ public class ProductoController {
         ProductoResponse response = ProductoResponse.from(productoService.cancelar(id));
         return ResponseEntity.ok(response);
     }
+
+
 }

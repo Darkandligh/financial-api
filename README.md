@@ -1,4 +1,4 @@
-# Financial API - MiniBanco
+# MiniBanco — API Financiera
 
 API REST para la gestión de clientes, cuentas financieras y transacciones bancarias, desarrollada como prueba técnica con Spring Boot y PostgreSQL.
 
@@ -10,51 +10,105 @@ API REST para la gestión de clientes, cuentas financieras y transacciones banca
 |---|---|
 | Java | 17 |
 | Spring Boot | 3.5.14 |
-| Spring Data JPA | - |
-| Spring Validation | - |
+| Spring Data JPA / Hibernate | — |
+| Spring Validation | — |
 | springdoc-openapi (Swagger) | 2.8.8 |
 | PostgreSQL | 14+ |
-| Lombok | - |
-| JUnit 5 + Mockito | - |
+| H2 (tests) | — |
+| Lombok | — |
+| JUnit 5 + Mockito | — |
 | Maven | 3.x |
+| Docker / Docker Compose | — |
 
 ---
 
-## Requisitos previos
+## Arquitectura
 
-- Java 17 instalado
-- PostgreSQL corriendo en `localhost:5432`
-- Base de datos creada manualmente:
+El proyecto utiliza una **arquitectura en capas MVC** con separación clara de responsabilidades:
 
-```sql
-CREATE DATABASE financial_db;
+```
+Controller  →  Service  →  Repository  →  Entity (JPA)
+   ↕                           ↕
+  DTO                      Base de datos
 ```
 
----
-
-## Configuración
-
-Editar `src/main/resources/application.properties`:
-
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/financial_db
-spring.datasource.username=postgres
-spring.datasource.password=adminadmin
-```
-
-Las tablas se crean automáticamente al levantar la app (`ddl-auto=update`).
+| Capa | Responsabilidad |
+|---|---|
+| `controller` | Recibe peticiones HTTP, valida entrada, devuelve respuestas |
+| `service` | Contiene toda la lógica de negocio y validaciones |
+| `repository` | Acceso a base de datos mediante Spring Data JPA |
+| `entity` | Mapeo objeto-relacional de las tablas |
+| `dto` | Objetos de transferencia para desacoplar la API del modelo interno |
+| `exception` | Manejo centralizado de errores con `GlobalExceptionHandler` |
+| `enums` | Tipos seguros para estados y categorías de negocio |
 
 ---
 
-## Ejecución
+## Patrones de diseño utilizados
+
+| Patrón | Dónde se aplica |
+|---|---|
+| **Repository** | `ClienteRepository`, `ProductoRepository`, `TransaccionRepository` — abstracción del acceso a datos |
+| **DTO (Data Transfer Object)** | `ProductoRequest`, `ProductoResponse`, `TransaccionResponse` — separa la API del modelo interno |
+| **Builder** | `@Builder` de Lombok en todas las entidades — construcción legible de objetos complejos |
+| **Singleton** | Todos los `@Service`, `@Repository` y `@Controller` son beans Spring con scope singleton |
+| **Template Method** | `@PrePersist` / `@PreUpdate` en entidades — hooks de ciclo de vida reutilizados por JPA |
+| **Exception Handler** | `GlobalExceptionHandler` con `@RestControllerAdvice` — manejo centralizado de errores |
+
+---
+
+## Principios SOLID
+
+| Principio | Aplicación en el proyecto |
+|---|---|
+| **S** — Single Responsibility | Cada clase tiene una sola razón para cambiar: `ClienteService` solo gestiona clientes, `TransaccionService` solo transacciones |
+| **O** — Open/Closed | Los enums `TipoCuenta`, `EstadoCuenta`, `TipoTransaccion` permiten extender comportamiento sin modificar código existente |
+| **L** — Liskov Substitution | Las interfaces `JpaRepository` son intercambiables en tests (reemplazadas por mocks de Mockito) |
+| **I** — Interface Segregation | Cada `Repository` expone solo los métodos que su consumidor necesita (ej. `existsByEmail`, `findByNumeroCuenta`) |
+| **D** — Dependency Inversion | Los servicios reciben sus dependencias por constructor, no las instancian directamente |
+
+---
+
+## Principio ACID en transacciones
+
+Las operaciones financieras críticas están anotadas con `@Transactional`:
+
+| Propiedad | Garantía en MiniBanco |
+|---|---|
+| **Atomicidad** | Si falla cualquier paso de una transferencia (débito o crédito), toda la operación se revierte |
+| **Consistencia** | Las validaciones de negocio (saldo suficiente, cuenta activa) garantizan un estado válido antes y después |
+| **Isolation** | Spring usa el nivel de aislamiento por defecto de PostgreSQL (READ COMMITTED), evitando lecturas sucias |
+| **Durabilidad** | PostgreSQL persiste los cambios en disco; ante un fallo del servidor los datos confirmados no se pierden |
+
+---
+
+## Ejecución local
+
+### Opción 1 — Con Maven (requiere PostgreSQL local)
 
 ```bash
+# Crear la base de datos
+psql -U postgres -c "CREATE DATABASE financial_db;"
+
+# Levantar la aplicación
 ./mvnw spring-boot:run
 ```
 
-La API queda disponible en `http://localhost:8080`.
+### Opción 2 — Con Docker (recomendado, sin dependencias locales)
 
-Documentación Swagger UI: `http://localhost:8080/swagger-ui/index.html`
+```bash
+# Levantar backend + PostgreSQL en contenedores
+docker-compose up --build
+
+# Detener
+docker-compose down
+
+# Detener y borrar volúmenes de datos
+docker-compose down -v
+```
+
+La API queda disponible en `http://localhost:8080`.
+Swagger UI: `http://localhost:8080/swagger-ui/index.html`
 
 ---
 
@@ -91,12 +145,43 @@ src/main/java/com/trinity/financial_api/
 ├── enums/
 │   ├── TipoCuenta.java       (AHORRO, CORRIENTE)
 │   ├── EstadoCuenta.java     (ACTIVA, INACTIVA, CANCELADA)
-│   └── TipoTransaccion.java  (DEPOSITO, RETIRO, TRANSFERENCIA)
+│   └── TipoTransaccion.java  (DEPOSITO, RETIRO, TRANSFERENCIA, DEBITO, CREDITO)
 └── exception/
     ├── BusinessException.java
     ├── ErrorResponse.java
     └── GlobalExceptionHandler.java
+
+src/main/resources/
+├── sql/
+│   ├── ddl.sql     ← Definición de tablas (referencia)
+│   └── dml.sql     ← Datos de prueba
+└── static/         ← Frontend web integrado
 ```
+
+---
+
+## Tests
+
+```bash
+./mvnw test
+```
+
+| Suite | Tipo | Tests |
+|---|---|---|
+| `ClienteControllerComponentTest` | Integración (H2) | 6 |
+| `ProductoControllerComponentTest` | Integración (H2) | 4 |
+| `TransaccionControllerComponentTest` | Integración (H2) | 3 |
+| `ClienteControllerTest` | Unitario (Mockito) | 5 |
+| `ProductoControllerTest` | Unitario (Mockito) | 4 |
+| `TransaccionControllerTest` | Unitario (Mockito) | 3 |
+| `ClienteServiceTest` | Unitario (Mockito) | 9 |
+| `ProductoServiceTest` | Unitario (Mockito) | 9 |
+| `TransaccionServiceTest` | Unitario (Mockito) | 4 |
+| `FinancialApiApplicationTests` | Contexto Spring | 1 |
+
+**Total: 48 tests — capas Service, Controller (unitarios + integración).**
+
+Los tests de integración usan **H2 en memoria** y levantan el contexto completo de Spring (`@SpringBootTest + @AutoConfigureMockMvc`), validando el flujo real desde el endpoint HTTP hasta la base de datos.
 
 ---
 
@@ -107,14 +192,12 @@ src/main/java/com/trinity/financial_api/
 | Método | Endpoint | Descripción |
 |---|---|---|
 | `POST` | `/api/clientes` | Crear cliente |
-| `GET` | `/api/clientes/{id}` | Consultar cliente por ID |
-| `GET` | `/api/clientes/identificacion/{numero}` | Consultar cliente por número de identificación |
+| `GET` | `/api/clientes/{id}` | Consultar por ID |
+| `GET` | `/api/clientes/identificacion/{numero}` | Consultar por número de identificación |
 | `PUT` | `/api/clientes/{id}` | Actualizar cliente |
 | `DELETE` | `/api/clientes/{id}` | Eliminar cliente |
 
-#### POST /api/clientes — Crear cliente
-
-**Request:**
+**POST /api/clientes — Request:**
 ```json
 {
   "tipoIdentificacion": "CC",
@@ -126,32 +209,6 @@ src/main/java/com/trinity/financial_api/
 }
 ```
 
-**Response `201 Created`:**
-```json
-{
-  "id": 1,
-  "tipoIdentificacion": "CC",
-  "numeroIdentificacion": "1099887766",
-  "nombres": "Laura",
-  "apellidos": "Gómez",
-  "email": "laura.gomez@email.com",
-  "fechaNacimiento": "1990-03-15",
-  "fechaCreacion": "2026-06-01T10:00:00",
-  "fechaModificacion": "2026-06-01T10:00:00"
-}
-```
-
-#### PUT /api/clientes/{id} — Actualizar cliente
-
-Mismo body que el POST. La `fechaModificacion` se recalcula automáticamente.
-
-**Response `200 OK`:** cliente con datos actualizados.
-
-#### DELETE /api/clientes/{id} — Eliminar cliente
-
-**Response `204 No Content`** si no tiene productos vinculados.
-**Response `400`** si el cliente tiene cuentas asociadas.
-
 ---
 
 ### Productos (Cuentas) — `/api/productos`
@@ -159,13 +216,11 @@ Mismo body que el POST. La `fechaModificacion` se recalcula automáticamente.
 | Método | Endpoint | Descripción |
 |---|---|---|
 | `POST` | `/api/productos` | Crear cuenta |
-| `GET` | `/api/productos/cliente/{clienteId}` | Listar cuentas de un cliente |
-| `PATCH` | `/api/productos/{id}/estado` | Activar o inactivar cuenta |
+| `GET` | `/api/productos/cliente/{clienteId}` | Listar cuentas del cliente |
+| `PATCH` | `/api/productos/{id}/estado` | Activar o inactivar |
 | `POST` | `/api/productos/{id}/cancelar` | Cancelar cuenta |
 
-#### POST /api/productos — Crear cuenta
-
-**Request:**
+**POST /api/productos — Request:**
 ```json
 {
   "clienteId": 1,
@@ -173,39 +228,6 @@ Mismo body que el POST. La `fechaModificacion` se recalcula automáticamente.
   "exentaGMF": false
 }
 ```
-
-Valores válidos para `tipoCuenta`: `AHORRO`, `CORRIENTE`
-
-**Response `201 Created`:**
-```json
-{
-  "id": 1,
-  "tipoCuenta": "AHORRO",
-  "numeroCuenta": "5312345678",
-  "estado": "ACTIVA",
-  "saldo": 0.00,
-  "exentaGMF": false,
-  "clienteId": 1,
-  "fechaCreacion": "2026-06-01T10:05:00"
-}
-```
-
-#### GET /api/productos/cliente/{clienteId} — Listar cuentas del cliente
-
-**Response `200 OK`:** lista de todas las cuentas del cliente (activas, inactivas y canceladas).
-
-#### PATCH /api/productos/{id}/estado — Cambiar estado
-
-**Request:**
-```json
-{ "estado": "INACTIVA" }
-```
-
-Valores válidos: `ACTIVA`, `INACTIVA`. Para cancelar usar `/cancelar`.
-
-#### POST /api/productos/{id}/cancelar — Cancelar cuenta
-
-Solo permitido si el saldo es `$0`. **Response `200 OK`** con estado `CANCELADA`.
 
 ---
 
@@ -216,61 +238,9 @@ Solo permitido si el saldo es `$0`. **Response `200 OK`** con estado `CANCELADA`
 | `POST` | `/api/transacciones/deposito` | Consignación |
 | `POST` | `/api/transacciones/retiro` | Retiro |
 | `POST` | `/api/transacciones/transferencia` | Transferencia entre cuentas |
-| `GET` | `/api/transacciones/cuenta/{numeroCuenta}` | Historial de transacciones |
+| `GET` | `/api/transacciones/cuenta/{numeroCuenta}` | Historial de movimientos |
 
-#### POST /api/transacciones/deposito
-
-```json
-{
-  "numeroCuenta": "5312345678",
-  "monto": 500000.00
-}
-```
-
-#### POST /api/transacciones/retiro
-
-```json
-{
-  "numeroCuenta": "5312345678",
-  "monto": 100000.00
-}
-```
-
-#### POST /api/transacciones/transferencia
-
-```json
-{
-  "cuentaOrigen": "5312345678",
-  "cuentaDestino": "3387654321",
-  "monto": 50000.00
-}
-```
-
-#### GET /api/transacciones/cuenta/{numeroCuenta} — Historial
-
-Retorna todas las transacciones donde la cuenta participó (como origen o destino), ordenadas de más reciente a más antigua.
-
-**Response `200 OK`:**
-```json
-[
-  {
-    "id": 3,
-    "tipo": "TRANSFERENCIA",
-    "monto": 50000.00,
-    "fecha": "2026-06-01T10:20:00",
-    "numeroCuentaOrigen": "5312345678",
-    "numeroCuentaDestino": "3387654321"
-  },
-  {
-    "id": 1,
-    "tipo": "DEPOSITO",
-    "monto": 500000.00,
-    "fecha": "2026-06-01T10:10:00",
-    "numeroCuentaOrigen": "5312345678",
-    "numeroCuentaDestino": null
-  }
-]
-```
+Una transferencia genera **dos registros** en la tabla `transacciones`: un movimiento `DEBITO` en la cuenta origen y un movimiento `CREDITO` en la cuenta destino.
 
 ---
 
@@ -285,10 +255,9 @@ Retorna todas las transacciones donde la cuenta participó (como origen o destin
 | Cliente | No se puede eliminar si tiene productos vinculados |
 | Producto | Número de cuenta generado automáticamente (10 dígitos) |
 | Producto | Cuenta ahorro inicia con prefijo `53`, corriente con `33` |
-| Producto | Saldo inicial = $0, estado inicial = ACTIVA |
+| Producto | Saldo inicial $0, estado inicial ACTIVA |
 | Producto | Solo se cancela si el saldo es $0 |
-| Producto | No se puede cambiar estado de una cuenta cancelada |
-| Transacción | La cuenta debe estar ACTIVA para operar |
+| Transacción | La cuenta debe estar ACTIVA |
 | Retiro | El saldo no puede quedar negativo |
 | Transferencia | Origen y destino deben ser cuentas distintas y activas |
 
@@ -296,24 +265,8 @@ Retorna todas las transacciones donde la cuenta participó (como origen o destin
 
 ## Manejo de errores
 
-**Error de negocio:**
 ```json
-{
-  "mensaje": "No se puede eliminar el cliente porque tiene productos vinculados",
-  "codigo": 400
-}
-```
-
-**Error de validación:**
-```json
-{
-  "mensaje": "Error de validación en los campos enviados",
-  "codigo": 400,
-  "errores": {
-    "email": "El formato del email no es válido",
-    "nombres": "Los nombres deben tener entre 2 y 100 caracteres"
-  }
-}
+{ "mensaje": "El cliente debe ser mayor de edad (18 años o más)", "codigo": 400 }
 ```
 
 | Escenario | HTTP |
@@ -324,76 +277,17 @@ Retorna todas las transacciones donde la cuenta participó (como origen o destin
 
 ---
 
-## Tests unitarios
-
-```bash
-./mvnw test
-```
-
-| Suite | Capa | Tests |
-|---|---|---|
-| `ClienteServiceTest` | Service | 9 |
-| `ProductoServiceTest` | Service | 9 |
-| `TransaccionServiceTest` | Service | 3 |
-| `ClienteControllerTest` | Controller | 5 |
-| `ProductoControllerTest` | Controller | 4 |
-| `TransaccionControllerTest` | Controller | 3 |
-| `FinancialApiApplicationTests` | Contexto Spring | 1 |
-
-**Total: 34 tests — cobertura en capas Service y Controller.**
-
----
-
-## Colección Postman
-
-El archivo `MiniBanco.postman_collection.json` en la raíz del proyecto contiene 27 requests listos para importar, cubriendo todos los escenarios exitosos y de error.
-
-**Importar:** Postman → Import → seleccionar el archivo.
-
----
-
-## Flujo de prueba sugerido
-
-1. `POST /api/clientes` — crear cliente
-2. `POST /api/productos` — crear cuenta ahorro
-3. `POST /api/productos` — crear cuenta corriente
-4. `POST /api/transacciones/deposito` — depositar en cuenta ahorro
-5. `POST /api/transacciones/retiro` — retirar de cuenta ahorro
-6. `POST /api/transacciones/transferencia` — transferir entre cuentas
-7. `GET /api/transacciones/cuenta/{numeroCuenta}` — ver historial
-8. `GET /api/productos/cliente/{id}` — ver estado de todas las cuentas
-
----
-
 ## Frontend
 
-El proyecto incluye un dashboard web servido directamente por Spring Boot. No requiere Node.js, npm ni ningún build tool.
-
-### Archivos
-
-| Archivo | Descripción |
-|---|---|
-| `src/main/resources/static/index.html` | Estructura HTML con sidebar y 5 secciones |
-| `src/main/resources/static/styles.css` | Diseño dark fintech con glassmorphism y animaciones |
-| `src/main/resources/static/app.js` | Lógica completa: fetch, toasts, estados de carga |
-
-### Cómo usarlo
-
-1. Levanta el backend: `./mvnw spring-boot:run`
-2. Abre `http://localhost:8080` en el navegador
-3. El indicador de estado en el sidebar confirma la conexión con la API
-
-### Secciones del dashboard
+El proyecto incluye un dashboard web servido directamente por Spring Boot en `http://localhost:8080`. No requiere Node.js ni build tools adicionales.
 
 | Sección | Funcionalidad |
 |---|---|
-| **Dashboard** | Panel de bienvenida con accesos rápidos |
-| **Clientes** | Crear cliente, buscar por ID, eliminar |
-| **Cuentas** | Crear cuenta, listar por cliente, activar / inactivar / cancelar |
-| **Operaciones** | Depósito, retiro y transferencia con resultado visual |
-| **Historial** | Tabla de movimientos por número de cuenta |
-
-> El backend tiene CORS habilitado para permitir peticiones desde el navegador (`CorsConfig.java`).
+| Dashboard | Panel de bienvenida con accesos rápidos |
+| Clientes | Crear, buscar, editar y eliminar clientes |
+| Cuentas | Crear cuentas, gestionar estados, ver saldos |
+| Operaciones | Depósito, retiro y transferencia |
+| Historial | Movimientos por número de cuenta con filtros |
 
 ---
 
