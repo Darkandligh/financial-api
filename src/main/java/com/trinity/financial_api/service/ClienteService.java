@@ -7,6 +7,8 @@ import com.trinity.financial_api.repository.ProductoRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.List;
+
 
 @Service
 public class ClienteService {
@@ -91,4 +93,10 @@ public class ClienteService {
             );
         }
     }
-}
+
+
+
+    }
+
+
+
