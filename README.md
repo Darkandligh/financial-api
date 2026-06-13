@@ -291,6 +291,83 @@ El proyecto incluye un dashboard web servido directamente por Spring Boot en `ht
 
 ---
 
+## DDL y DML
+
+Los scripts SQL están en `src/main/resources/sql/`:
+
+| Archivo | Tipo | Contenido |
+|---|---|---|
+| `ddl.sql` | DDL — Data Definition Language | `CREATE TABLE` de las tres tablas con constraints, claves foráneas e índices |
+| `dml.sql` | DML — Data Manipulation Language | `INSERT` de datos de prueba: 3 clientes, 3 cuentas y 4 transacciones |
+
+En desarrollo, Hibernate genera el esquema automáticamente (`ddl-auto=update`). Los scripts sirven como referencia, para despliegue manual o para ejecutar en la entrevista.
+
+```bash
+# Conectarse a PostgreSQL dentro del contenedor Docker
+docker exec -it minibanco-postgres psql -U postgres -d minibanco
+
+# Cargar datos de prueba
+docker exec -i minibanco-postgres psql -U postgres -d minibanco < src/main/resources/sql/dml.sql
+```
+
+---
+
+## Prueba con componentes
+
+Además de los tests unitarios con Mockito, el proyecto incluye **tests de componentes** (`*ComponentTest.java`) que levantan el contexto completo de Spring con `@SpringBootTest` y simulan peticiones HTTP reales con `MockMvc`, usando **H2 en memoria** como base de datos.
+
+| Tipo | Herramientas | Qué prueba |
+|---|---|---|
+| **Unitario** | JUnit 5 + Mockito | Una clase aislada; las dependencias son mocks |
+| **Componentes** | @SpringBootTest + MockMvc + H2 | El flujo completo: endpoint → service → repository → BD |
+
+```bash
+# Solo tests de componentes
+./mvnw test -Dtest="*ComponentTest"
+
+# Todos los tests
+./mvnw test
+```
+
+---
+
+## Git Flow
+
+El proyecto siguió la estrategia **Git Flow** para la administración de ramas:
+
+```
+feature/gestion-clientes      → CRUD de clientes y validaciones
+feature/gestion-productos     → cuentas bancarias, número automático
+feature/gestion-transacciones → depósito, retiro, transferencia
+feature/docker                → Dockerfile multi-stage + docker-compose
+feature/tests                 → 48 tests unitarios y de componentes
+feature/documentacion         → README, DDL/DML, Swagger
+        ↓ (merges a develop)
+develop
+        ↓
+release/1.1.0
+        ↓
+master  ← tag v1.1.0
+```
+
+Cada funcionalidad se desarrolló en su propia `feature branch`, se integró en `develop`, y se liberó a `master` a través de una `release branch` con su respectivo tag.
+
+---
+
+## Servicios en la nube
+
+La aplicación está preparada para desplegarse en la nube gracias al `Dockerfile` multi-stage. No se requiere configuración adicional en plataformas PaaS como **Railway** o **Render**, que leen el Dockerfile directamente desde GitHub.
+
+| Opción | Tipo | Uso |
+|---|---|---|
+| **Railway / Render** | PaaS | Detectan el Dockerfile automáticamente, asignan URL pública |
+| **AWS EC2** | IaaS | Máquina virtual donde se instala Docker manualmente |
+| **AWS RDS** | DBaaS | PostgreSQL administrado en la nube sin instalar nada |
+
+Para esta prueba técnica la app corre localmente con `docker-compose`. El mismo `docker-compose.yml` puede usarse en cualquier servidor con Docker instalado.
+
+---
+
 ## Repositorio
 
 [https://github.com/Darkandligh/financial-api](https://github.com/Darkandligh/financial-api)
