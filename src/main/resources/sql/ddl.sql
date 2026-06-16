@@ -42,6 +42,8 @@ CREATE TABLE IF NOT EXISTS transacciones (
     fecha             TIMESTAMP       NOT NULL,
     cuenta_origen_id  BIGINT          NOT NULL,
     cuenta_destino_id BIGINT,
+    CONSTRAINT transacciones_tipo_transaccion_check
+        CHECK (tipo_transaccion IN ('DEPOSITO', 'RETIRO', 'TRANSFERENCIA', 'DEBITO', 'CREDITO')),
     CONSTRAINT fk_transacciones_cuenta_origen
         FOREIGN KEY (cuenta_origen_id)  REFERENCES productos (id),
     CONSTRAINT fk_transacciones_cuenta_destino
