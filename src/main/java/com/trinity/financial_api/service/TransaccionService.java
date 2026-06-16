@@ -91,8 +91,8 @@ public class TransaccionService {
         return transaccionRepository.save(Transaccion.builder()
             .tipoTransaccion(TipoTransaccion.CREDITO)
             .monto(monto)
-            .cuentaOrigen(origen)
-            .cuentaDestino(destino)
+            .cuentaOrigen(destino)
+            .cuentaDestino(origen)
             .build());
     }
 

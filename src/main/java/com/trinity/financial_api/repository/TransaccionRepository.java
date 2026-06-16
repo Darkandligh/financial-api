@@ -11,11 +11,10 @@ import java.util.List;
 @Repository
 public interface TransaccionRepository extends JpaRepository<Transaccion, Long> {
 
-    @Query("SELECT DISTINCT t FROM Transaccion t " +
+    @Query("SELECT t FROM Transaccion t " +
            "LEFT JOIN FETCH t.cuentaOrigen " +
            "LEFT JOIN FETCH t.cuentaDestino " +
            "WHERE t.cuentaOrigen.numeroCuenta = :numeroCuenta " +
-           "OR t.cuentaDestino.numeroCuenta = :numeroCuenta " +
            "ORDER BY t.fecha DESC")
     List<Transaccion> findByCuentaNumero(@Param("numeroCuenta") String numeroCuenta);
 }
